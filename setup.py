@@ -14,6 +14,7 @@ setup(
     long_description_content_type="text/markdown",
     author="Olx",
     license='Apache 2',
+    include_package_data=True,
     url='https://github.com/olxbr/BarterDude/',
     download_url='https://github.com/olxbr/BarterDude/archive/master.zip',
     install_requires=requirements,

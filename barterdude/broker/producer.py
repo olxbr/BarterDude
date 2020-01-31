@@ -3,14 +3,15 @@ from barterdude.broker.conn_builder import ConnBuilder
 
 
 class Producer:
-    def __init__(self, connection: ConnBuilder):
+    def __init__(self, connection: ConnBuilder, exchange: Exchange):
         self.__connection = connection
+        self.__exchange = exchange
 
-    async def produce(self, exchange: Exchange, message: dict):
+    def produce(self, message: dict):
         self.__connection.Producer().publish(
             message,
             serializer='json',
-            exchange=exchange,
+            exchange=self.__exchange,
             retry=True,
             retry_policy={
                 'interval_start': 0,
