@@ -1,5 +1,5 @@
 from kombu import Exchange
-from seller_bouncer.broker.conn_builder import ConnBuilder
+from barterdude.broker.conn_builder import ConnBuilder
 
 
 class Producer:

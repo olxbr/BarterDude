@@ -1,11 +1,11 @@
 from kombu import Queue, Message
-from seller_bouncer.broker.conn_builder import ConnBuilder
-from typing import Callable
+from barterdude.broker.conn_builder import ConnBuilder
+from typing import Callable, Optional
 
 
 class Consumer:
     def __init__(self, connection: ConnBuilder,
-                 processer: Callable[[str, Message], bool]
+                 processer: Callable[[str, Message], Optional[dict]]
                  ):
         self.__connection = connection
         self.__processer = processer
