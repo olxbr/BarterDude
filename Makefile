@@ -12,4 +12,4 @@ test:
 
 check-sec:
 	@echo "Running Bandit..."
-	@bandit -r 
+	@bandit -r .
