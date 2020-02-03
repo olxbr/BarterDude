@@ -1,9 +1,8 @@
-from kombu import Exchange
-from barterdude.broker.conn_builder import ConnBuilder
+from kombu import Exchange, Connection
 
 
 class Producer:
-    def __init__(self, connection: ConnBuilder, exchange: Exchange):
+    def __init__(self, connection: Connection, exchange: Exchange):
         self.__connection = connection
         self.__exchange = exchange
 
