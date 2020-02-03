@@ -6,7 +6,7 @@ class Message(dict):
         self.__body = body
         self.__message = message
 
-    def as_dict(self):
+    def parse_content_type(self):
         return self.__message.payload
 
     def as_string(self):
