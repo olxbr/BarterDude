@@ -17,13 +17,11 @@ class TestBarterDude(TestCase):
         )
         self.queue.put = Mock()
         self.queue.consume = Mock()
-        self.app = MyApp(connections=[AMQPConnection(
-                "localhost",
-                "username",
-                "pass",
-                name="conn1"
-
-
+        self.app = MyApp(connections=[AMQPConnection(  # nosec
+                name="conn1",
+                hostname="localhost",
+                username="username",
+                password="pass"
             )])
         self.app.get_connection = Mock(return_value=self.queue)
 
