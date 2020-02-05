@@ -1,4 +1,4 @@
-from asyncworker import App, RouteTypes
+from asyncworker import App
 from typing import Iterable
 
 
