@@ -1,27 +1,39 @@
+import threading
+
 from barterdude import BarterDude
+from barterdude.hooks import BaseHook
 from asyncworker import RouteTypes
 from aiohttp import web
 
 
-class Healthcheck:
+class Healthcheck(BaseHook):
     def __init__(
         self,
         barterdude: BarterDude,
         path: str = "/healthcheck",
-        errors_rate: float = 0.05
+        error_rate: float = 0.05,
+        clear_seconds: int = 10
     ):
         self.__barterdude = barterdude
         self.__path = path
-        self.__success = self.__error = 0
-        self.__error_rate = errors_rate
+        self.__error_rate = error_rate
+        self.__clear_seconds = clear_seconds
+        self._clear_rates()
+        self._start_server()
 
-    def incr_success(self):
+    def _clear_rates(self):
+        self.__success = self.__error = 0
+        timer = threading.Timer(self.__clear_seconds, self._clear_rates)
+        timer.daemon = True
+        timer.start()
+
+    def on_success(self):
         self.__success += 1
 
-    def incr_error(self):
+    def on_fail(self):
         self.__error += 1
 
-    def start_monitor(self):
+    def _start_server(self):
         self.__barterdude.route(
             routes=[self.__path],
             methods=["GET"],
@@ -42,6 +54,6 @@ class Healthcheck:
                 status=500
             )
         return web.Response(
-                body=f"Bater like a dude! Error rate: {rate}",
-                status=200
-            )
+            body=f"Bater like a dude! Error rate: {rate}",
+            status=200
+        )
