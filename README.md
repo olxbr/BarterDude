@@ -28,13 +28,11 @@ make test
 ## Usage
 
 ```python
-    barterdude = BarterDude([connec...])
+    barterdude = BarterDude([connection, ...])
 
-    monitor = Monitor(..)
-    healthcheck = Healthcheck(..)
-    metrics = Prometheus(...)
-    monitor.add_hook(healthcheck)
-    monitor.add_hook(metrics)
+    healthcheck = Healthcheck(baterdude, ...)
+    metrics = Prometheus(baterdude, ...)
+    monitor = Monitor(healthcheck, metrics)
 
     @barterdude.route(["queue"], ...)
     @barterdude.forward(["exchange"], ...)
