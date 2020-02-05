@@ -27,5 +27,5 @@ class HttpHook(BaseHook):
             type=RouteTypes.HTTP
         )(self)
 
-    def __call__(self, *args, **kwargs):
+    async def __call__(self, *args, **kwargs):
         return NotImplemented

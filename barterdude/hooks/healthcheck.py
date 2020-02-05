@@ -30,7 +30,7 @@ class Healthcheck(HttpHook):
     def on_fail(self):
         self.__error += 1
 
-    def __call__(self, *args, **kwargs):
+    async def __call__(self, *args, **kwargs):
         if self.__success:
             rate = self.__error/(self.__success + self.__error)
             if rate >= self.__error_rate:
