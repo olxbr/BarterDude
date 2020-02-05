@@ -1,6 +1,7 @@
-from barterdude.hooks import BaseHook
+from barterdude import BarterDude
+from barterdude.hooks import HttpHook
 
 
-class Prometheus(BaseHook):
-    def __init__(self, gateway_url: str):
-        self.__gateway_url = gateway_url
+class Prometheus(HttpHook):
+    def __init__(self, barterdude: BarterDude, path: str = "/metrics"):
+        super(Prometheus, self).__init__(barterdude, path)
