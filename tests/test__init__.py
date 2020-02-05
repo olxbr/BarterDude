@@ -13,15 +13,16 @@ class TestBarterDude(TestCase):
             )
         self.appCls = MyApp
         self.queue = JsonQueue(
-            "localhost", "username", "password"
+            "localhost", "username", "pass"
         )
         self.queue.put = Mock()
         self.queue.consume = Mock()
         self.app = MyApp(connections=[AMQPConnection(
-                name="conn1",
-                hostname="localhost",
-                username="guest",
-                password="guest",
+                "localhost",
+                "username",
+                "pass",
+                name="conn1"
+
 
             )])
         self.app.get_connection = Mock(return_value=self.queue)
