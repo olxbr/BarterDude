@@ -18,6 +18,9 @@ setup(
     url='https://github.com/olxbr/BarterDude/',
     download_url='https://github.com/olxbr/BarterDude/archive/master.zip',
     install_requires=requirements,
+    extra_requires={
+        "prometheus": ["prometheus-client==0.7.1"]
+    },
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: Apache Software License",

@@ -1,16 +1,19 @@
-from abc import ABC
+from abc import ABCMeta, abstractmethod
 from asyncworker import RouteTypes
 
 
-class BaseHook(ABC):
+class BaseHook(metaclass=ABCMeta):
+    @abstractmethod
     async def on_success(self, message):
-        return NotImplemented
+        pass
 
-    async def on_fail(self, message):
-        return NotImplemented
+    @abstractmethod
+    async def on_fail(self, message, error):
+        pass
 
+    @abstractmethod
     async def before_consume(self, message):
-        return NotImplemented
+        pass
 
 
 class HttpHook(BaseHook):
@@ -28,4 +31,13 @@ class HttpHook(BaseHook):
         )(self)
 
     async def __call__(self, *args, **kwargs):
-        return NotImplemented
+        raise NotImplementedError
+
+    async def on_success(self, message):
+        raise NotImplementedError
+
+    async def on_fail(self, message, error):
+        raise NotImplementedError
+
+    async def before_consume(self, message):
+        raise NotImplementedError

@@ -24,10 +24,10 @@ class Healthcheck(HttpHook):
         timer.daemon = True
         timer.start()
 
-    def on_success(self):
+    async def on_success(self, message):
         self.__success += 1
 
-    def on_fail(self):
+    async def on_fail(self, message, error):
         self.__error += 1
 
     async def __call__(self, *args, **kwargs):
