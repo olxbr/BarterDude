@@ -1,6 +1,6 @@
 from asyncworker import App
 from typing import Iterable
-from barterdude.observer import Observer
+from barterdude.monitor import Monitor
 
 
 class BarterDude(App):
@@ -28,16 +28,16 @@ class BarterDude(App):
 
         return decorator
 
-    def observe(self, observer: Observer):
+    def observe(self, monitor: Monitor):
         def decorator(f):
             def wrapper(message):
-                observer.dispatch_before_consume(message)
+                monitor.dispatch_before_consume(message)
                 try:
                     returned = f(message)
                 except Exception as error:
-                    observer.dispatch_on_fail(message, error)
+                    monitor.dispatch_on_fail(message, error)
                     raise error
-                observer.dispatch_on_success(message)
+                monitor.dispatch_on_success(message)
                 return returned
 
             return wrapper

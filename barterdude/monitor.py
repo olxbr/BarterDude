@@ -1,11 +1,6 @@
-from barterdude.hooks import BaseHook
-
-
 class Monitor:
-    __hooks = []
-
-    def add_hook(self, hook: BaseHook):
-        self.__hooks.append(hook)
+    def __init__(self, *hooks):
+        self.__hooks = hooks
 
     async def dispatch_before_consume(self, message):
         for hook in self.__hooks:
