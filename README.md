@@ -7,13 +7,13 @@ Message exchange engine to build pipelines in brokers like RabbitMQ
 
 Using Python 3.6+
 
-```
+```sh
 make install
 ```
 
 or
 
-```
+```sh
 make setup
 ```
 
@@ -21,13 +21,27 @@ for development
 
 ## Test
 
-```
+```sh
 make test
 ```
 
 ## Usage
 
-In progress...
+```python
+    barterdude = BarterDude([connec...])
+
+    monitor = Monitor(..)
+    healthcheck = Healthcheck(..)
+    metrics = Prometheus(...)
+    monitor.add_hook(healthcheck)
+    monitor.add_hook(metrics)
+
+    @barterdude.route(["queue"], ...)
+    @barterdude.forward(["exchange"], ...)
+    @barterdude.observe(monitor)
+    def my_callback(msg):
+        pass
+```
 
 ## Contribute
 

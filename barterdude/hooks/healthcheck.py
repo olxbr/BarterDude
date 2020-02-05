@@ -42,7 +42,7 @@ class Healthcheck(BaseHook):
 
     def __call__(self, *args, **kwargs):
         if self.__success:
-            rate = self.__error/self.__success
+            rate = self.__error/(self.__success + self.__error)
             if rate >= self.__error_rate:
                 return web.Response(
                     body=f"Error rate in {rate}, above {self.__error_rate}",

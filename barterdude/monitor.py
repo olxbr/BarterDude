@@ -1,7 +1,7 @@
 from barterdude.hooks import BaseHook
 
 
-class Observer:
+class Monitor:
     __hooks = []
 
     def add_hook(self, hook: BaseHook):

@@ -1,7 +1,7 @@
 .PHONY: install setup test check-sec
 
 install:
-	@pip install -r requirements.txt
+	@pip install -e .
 
 setup: install
 	@pip install -r requirements_test.txt
