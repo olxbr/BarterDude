@@ -13,10 +13,10 @@ class BarterDude(App):
 
     ):
         def decorator(f):
-            def wrapper(message):
-                returned = f(message)
+            async def wrapper(message):
+                returned = await f(message)
                 for exchange in exchanges:
-                    self.get_connection(conn_name).put(
+                    await self.get_connection(conn_name).put(
                         body=message,
                         routing_key=routing_key,
                         exchange=exchange,
@@ -30,15 +30,16 @@ class BarterDude(App):
 
     def observe(self, monitor: Monitor):
         def decorator(f):
-            def wrapper(message):
-                monitor.dispatch_before_consume(message)
+            async def wrapper(message):
+                await monitor.dispatch_before_consume(message)
                 try:
-                    returned = f(message)
+                    returned = await f(message)
                 except Exception as error:
-                    monitor.dispatch_on_fail(message, error)
+                    await monitor.dispatch_on_fail(message, error)
                     raise error
-                monitor.dispatch_on_success(message)
-                return returned
+                else:
+                    await monitor.dispatch_on_success(message)
+                    return returned
 
             return wrapper
 

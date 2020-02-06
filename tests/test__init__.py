@@ -1,32 +1,28 @@
-from asynctest import Mock, CoroutineMock, TestCase
+from asynctest import Mock, TestCase, CoroutineMock
+from tests.helpers import get_app
 
-from barterdude import BarterDude
 from asyncworker.routes import AMQPRoute, RouteTypes
-from asyncworker.connections import AMQPConnection
 from asyncworker.easyqueue.queue import JsonQueue
+
+from barterdude.monitor import Monitor
 
 
 class TestBarterDude(TestCase):
     async def setUp(self):
-        class MyApp(BarterDude):
-            handlers = (
-                Mock(startup=CoroutineMock(), shutdown=CoroutineMock()),
-            )
-        self.appCls = MyApp
+
         self.queue = JsonQueue(
             "localhost", "username", "pass"
         )
-        self.queue.put = Mock()
+        self.queue.put = CoroutineMock()
         self.queue.consume = Mock()
-        self.app = MyApp(connections=[AMQPConnection(  # nosec
-                name="conn1",
-                hostname="localhost",
-                username="username",
-                password="pass"
-            )])
+        self.app = get_app()
         self.app.get_connection = Mock(return_value=self.queue)
+        self.monitor = Monitor()
+        self.monitor.dispatch_before_consume = CoroutineMock()
+        self.monitor.dispatch_on_fail = CoroutineMock()
+        self.monitor.dispatch_on_success = CoroutineMock()
 
-    async def test_should_call_put(self):
+    async def test_should_call_put_on_forward(self):
         @self.app.forward("conn1", ["test"], "vhost", "routing")
         async def test_decorated(message):
             return None
@@ -37,7 +33,34 @@ class TestBarterDude(TestCase):
             body={}, exchange='test', routing_key='routing', vhost='vhost'
         )
 
-    async def test_should_call_put_when_call_route(self):
+    async def test_should_call_monitor_for_each_success_message(self):
+
+        @self.app.observe(self.monitor)
+        async def test_decorated(message):
+            return None
+        await test_decorated({})
+        self.monitor.dispatch_before_consume.assert_called_once()
+        self.monitor.dispatch_before_consume.assert_called_with({})
+        self.monitor.dispatch_on_success.assert_called_once()
+        self.monitor.dispatch_on_success.assert_called_with({})
+        self.monitor.dispatch_on_fail.assert_not_called()
+
+    async def test_should_call_monitor_for_each_fail_message(self):
+
+        exception = Exception()
+        @self.app.observe(self.monitor)
+        async def test_decorated(message):
+            raise exception
+            return None
+        with self.assertRaises(Exception):
+            await test_decorated({})
+        self.monitor.dispatch_before_consume.assert_called_once()
+        self.monitor.dispatch_before_consume.assert_called_with({})
+        self.monitor.dispatch_on_fail.assert_called_once()
+        self.monitor.dispatch_on_fail.assert_called_with({}, exception)
+        self.monitor.dispatch_on_success.assert_not_called()
+
+    async def test_should_call_put_on_forward_when_call_route(self):
         @self.app.route(
             ["test_route"], RouteTypes.AMQP_RABBITMQ
         )

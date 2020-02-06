@@ -1,7 +1,7 @@
 [![Build Status](https://travis-ci.com/olxbr/BarterDude.svg?branch=master)](https://travis-ci.com/olxbr/BarterDude)
 
 # BarterDude
-Message exchange engine to build pipelines in brokers like RabbitMQ
+Message exchange engine to build pipelines using brokers like RabbitMQ
 
 ## Install
 
