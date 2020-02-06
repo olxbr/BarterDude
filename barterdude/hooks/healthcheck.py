@@ -1,8 +1,16 @@
-import threading
-
 from barterdude import BarterDude
 from barterdude.hooks import HttpHook
 from aiohttp import web
+from time import time
+from collections import deque
+from bisect import bisect_left
+
+
+def _remove_old(instants: deque, old_timestamp: float):
+    pos = bisect_left(instants, old_timestamp)
+    for i in range(0, pos):
+        instants.popleft()
+    return len(instants)
 
 
 class Healthcheck(HttpHook):
@@ -10,40 +18,38 @@ class Healthcheck(HttpHook):
         self,
         barterdude: BarterDude,
         path: str = "/healthcheck",
-        error_rate: float = 0.05,
-        clear_seconds: int = 10
+        success_rate: float = 0.95,
+        health_window: float = 60.0  # seconds
     ):
-        self.__error_rate = error_rate
-        self.__clear_seconds = clear_seconds
-        self._clear_rates()
+        self.__success_rate = success_rate
+        self.__health_window = health_window
+        self.__success = deque()
+        self.__fail = deque()
         super(Healthcheck, self).__init__(barterdude, path)
 
-    def _clear_rates(self):
-        self.__success = self.__error = 0
-        timer = threading.Timer(self.__clear_seconds, self._clear_rates)
-        timer.daemon = True
-        timer.start()
-
     async def on_success(self, message):
-        self.__success += 1
+        self.__success.append(time())
 
     async def on_fail(self, message, error):
-        self.__error += 1
+        self.__fail.append(time())
 
     async def __call__(self, *args, **kwargs):
-        if self.__success:
-            rate = self.__error/(self.__success + self.__error)
-            if rate >= self.__error_rate:
-                return web.Response(
-                    body=f"Error rate in {rate}, above {self.__error_rate}",
-                    status=500
-                )
-        elif self.__error:
+        old_timestamp = time() - self.__health_window
+        success = _remove_old(self.__success, old_timestamp)
+        fail = _remove_old(self.__fail, old_timestamp)
+        if success == 0 and fail == 0:
             return web.Response(
-                body=f"Only error happened. {self.__error} until now",
+                body="No messages until now",
+                status=200
+            )
+        rate = success / (success + fail)
+        if rate >= self.__success_rate:
+            return web.Response(
+                body=f"Bater like a pro! Success rate: {rate}",
+                status=200
+            )
+        else:
+            return web.Response(
+                body=f"Success rate {rate} bellow {self.__success_rate}",
                 status=500
             )
-        return web.Response(
-            body=f"Bater like a dude! Error rate: {rate}",
-            status=200
-        )
