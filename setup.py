@@ -1,7 +1,21 @@
 from setuptools import setup, find_packages
 
-with open("requirements.txt") as reqs:
+libs = [
+    "prometheus"
+]
+
+extra = {
+    "all": [],
+
+}
+
+with open("requirements/requirements_base.txt") as reqs:
     requirements = reqs.read().split("\n")
+
+for lib in libs:
+    with open(f"requirements/requirements_{lib}.txt") as reqs:
+        extra[lib] = reqs.read().split("\n")
+        extra["all"] = extra["all"] + extra[lib]
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
@@ -9,7 +23,7 @@ with open("README.md", "r") as fh:
 setup(
     name="barterdude",
     version="DYNAMIC",
-    description="Message exchange engine to build pipelines in brokers like RabbitMQ",
+    description="Message exchange engine to build pipelines using brokers like RabbitMQ",
     long_description=long_description,
     long_description_content_type="text/markdown",
     author="Olx",
@@ -18,9 +32,7 @@ setup(
     url='https://github.com/olxbr/BarterDude/',
     download_url='https://github.com/olxbr/BarterDude/archive/master.zip',
     install_requires=requirements,
-    extra_requires={
-        "prometheus": ["prometheus-client==0.7.1"]
-    },
+    extra_requires=extra,
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: Apache Software License",
