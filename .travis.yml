@@ -9,8 +9,7 @@ install:
   - make setup
 # command to run tests
 script:
-  - make test
-  - make check-sec
+  - make all-tests
 
 before_deploy: sed -i "s/version=\".*\"/version=\"$TRAVIS_TAG\"/g" setup.py
 
@@ -24,3 +23,6 @@ deploy:
     branch: master
     tags: true
     condition: $TRAVIS_PYTHON_VERSION = "3.6"
+
+services:
+  - rabbitmq
