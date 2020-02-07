@@ -16,6 +16,7 @@ class TestPrometheus(TestCase):
         self.definition = Definition(senders=self.senders)
         self.definition.get_sender = Mock(return_value=self.mock_sender)
         self.labels = {"test": "my_test"}
+        self.message = {"message": "test"}
         self.prometheus = Prometheus(
             barterdude=self.app,
             labels=self.labels,
@@ -45,7 +46,7 @@ class TestPrometheus(TestCase):
         self.mock_sender.labels = Mock(
             return_value=mock_count
         )
-        await self.prometheus.before_consume({})
+        await self.prometheus.before_consume(self.message)
         self.mock_sender.labels.assert_called_once()
         self.mock_sender.labels.assert_called_with(**self.labels)
         mock_count.inc.assert_called_once()
@@ -57,8 +58,8 @@ class TestPrometheus(TestCase):
         self.mock_sender.labels = Mock(
             return_value=mock_sender
         )
-        await self.prometheus.before_consume({})
-        await self.prometheus.on_success({})
+        await self.prometheus.before_consume(self.message)
+        await self.prometheus.on_success(self.message)
         self.assertEqual(self.mock_sender.labels.call_count, 3)
         self.mock_sender.labels.assert_called_with(
             error=None, state='success', test='my_test'
@@ -73,8 +74,8 @@ class TestPrometheus(TestCase):
         self.mock_sender.labels = Mock(
             return_value=mock_sender
         )
-        await self.prometheus.before_consume({})
-        await self.prometheus.on_fail({}, Exception())
+        await self.prometheus.before_consume(self.message)
+        await self.prometheus.on_fail(self.message, Exception())
         self.assertEqual(self.mock_sender.labels.call_count, 3)
         self.mock_sender.labels.assert_called_with(
             error="<class 'Exception'>", state='fail', test='my_test'
@@ -90,9 +91,9 @@ class TestPrometheus(TestCase):
             return_value=mock_sender
         )
         with freezegun.freeze_time() as freeze:
-            await self.prometheus.before_consume({})
+            await self.prometheus.before_consume(self.message)
             freeze.tick()
-            await self.prometheus.on_success({})
+            await self.prometheus.on_success(self.message)
         mock_sender.observe.assert_called_once()
         mock_sender.observe.assert_called_with(1.0)
 
@@ -104,8 +105,8 @@ class TestPrometheus(TestCase):
             return_value=mock_sender
         )
         with freezegun.freeze_time() as freeze:
-            await self.prometheus.before_consume({})
+            await self.prometheus.before_consume(self.message)
             freeze.tick()
-            await self.prometheus.on_fail({}, Exception())
+            await self.prometheus.on_fail(self.message, Exception())
         mock_sender.observe.assert_called_once()
         mock_sender.observe.assert_called_with(1.0)
