@@ -99,7 +99,8 @@ class RabbitMQConsumerTest(TestCase):
 
     #     await self.app.startup()
 
-    #     await self.queue_manager.put(routing_key=self.queue_name, data=message)
+    #     await self.queue_manager.put(
+    #       routing_key=self.queue_name, data=message)
     #     await asyncio.sleep(2)
     #     self.assertTrue(self.successful_message_value_is_equal_first)
     #     self.assertTrue(self.successful_message_value_is_equal_second)
