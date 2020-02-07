@@ -27,9 +27,9 @@ class TestLogging(TestCase):
         )
 
     async def test_should_log_on_fail(self):
-        await self.logging.on_fail(self.message, KeyError('key not find'))
-        error = "KeyError('key not find')"
+        error = KeyError('key not find')
+        await self.logging.on_fail(self.message, error)
         self.logger.error.assert_called_once()
         self.logger.error.assert_called_with(
-            f"failed to consume message ({error}): {self.message}"
+            f"failed to consume message ({repr(error)}): {self.message}"
         )
