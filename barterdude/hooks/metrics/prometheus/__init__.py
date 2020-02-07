@@ -1,5 +1,6 @@
 import hashlib
 import time
+import copy
 from aiohttp import web
 from typing import Optional
 
@@ -54,12 +55,14 @@ class Prometheus(HttpHook):
             registry=self.__registry
         )
         self._d.prepare_before_consume(
-            self.D_BEFORE_CONSUME, default_kwargs
+            self.D_BEFORE_CONSUME, copy.deepcopy(default_kwargs)
         )
-        self._d.prepare_on_complete(self.D_SUCCESS, default_kwargs)
-        self._d.prepare_on_complete(self.D_FAIL, default_kwargs)
+        self._d.prepare_on_complete(
+            self.D_SUCCESS, copy.deepcopy(default_kwargs)
+        )
+        self._d.prepare_on_complete(self.D_FAIL, copy.deepcopy(default_kwargs))
         self._d.prepare_time_measure(
-            self.D_TIME_MEASURE, default_kwargs
+            self.D_TIME_MEASURE, copy.deepcopy(default_kwargs)
         )
 
     async def __compute_hash(self, message: dict):
@@ -67,7 +70,7 @@ class Prometheus(HttpHook):
 
     async def before_consume(self, message: dict):
         hash_message = await self.__compute_hash(message)
-        self._d.get_sender(self.D_BEFORE_CONSUME).labels(
+        self._d.senders[self.D_BEFORE_CONSUME].labels(
             **self.__labels
         ).inc()
         self.__time_bucket[hash_message] = time.time()
@@ -82,12 +85,12 @@ class Prometheus(HttpHook):
         labels = self.__labels.copy()
         labels["state"] = state
         labels["error"] = str(type(error)) if (error) else None
-        self._d.get_sender(state).labels(**labels).inc()
+        self._d.senders[state].labels(**labels).inc()
         start_time = self.__time_bucket.get(hash_message)
-
-        self._d.get_sender(self.D_TIME_MEASURE).labels(**labels).observe(
+        self._d.senders[self.D_TIME_MEASURE].labels(**labels).observe(
             final_time - start_time
         )
+        del self.__time_bucket[hash_message]
 
     async def on_success(self, message: dict):
         await self._on_complete(message, self.D_SUCCESS)
