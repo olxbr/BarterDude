@@ -110,3 +110,20 @@ class TestPrometheus(TestCase):
             await self.prometheus.on_fail(self.message, Exception())
         mock_sender.observe.assert_called_once()
         mock_sender.observe.assert_called_with(1.0)
+
+    async def test_should_remove_message_from_timer_on_complete(self):
+        mock_sender = Mock()
+        mock_sender.inc = Mock()
+        mock_sender.observe = Mock()
+        self.mock_sender.labels = Mock(
+            return_value=mock_sender
+        )
+        await self.prometheus.before_consume(self.message)
+        self.assertEqual(len(self.prometheus._time_bucket), 1)
+        await self.prometheus._on_complete(
+            self.message, "my_state", Exception()
+        )
+        self.assertDictEqual(
+            self.prometheus._time_bucket,
+            {}
+        )

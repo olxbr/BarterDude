@@ -42,7 +42,7 @@ class Prometheus(HttpHook):
         self.__labelnames = list(labels.keys())
         self.__labelvalues = list(labels.values())
         self._d = definition
-        self.__time_bucket = {}
+        self._time_bucket = {}
         self.__prepare_metrics()
         super(Prometheus, self).__init__(barterdude, path)
 
@@ -72,7 +72,7 @@ class Prometheus(HttpHook):
         self._d.senders[self.D_BEFORE_CONSUME].labels(
             **self.__labels
         ).inc()
-        self.__time_bucket[hash_message] = time.time()
+        self._time_bucket[hash_message] = time.time()
 
     async def _on_complete(self,
                            message: dict,
@@ -85,11 +85,11 @@ class Prometheus(HttpHook):
         labels["state"] = state
         labels["error"] = str(type(error)) if (error) else None
         self._d.senders[state].labels(**labels).inc()
-        start_time = self.__time_bucket.get(hash_message)
+        start_time = self._time_bucket.get(hash_message)
         self._d.senders[self.D_TIME_MEASURE].labels(**labels).observe(
             final_time - start_time
         )
-        del self.__time_bucket[hash_message]
+        del self._time_bucket[hash_message]
 
     async def on_success(self, message: dict):
         await self._on_complete(message, self.D_SUCCESS)
