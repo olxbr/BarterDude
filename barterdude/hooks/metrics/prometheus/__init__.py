@@ -1,4 +1,3 @@
-import hashlib
 import time
 import copy
 from aiohttp import web
@@ -66,7 +65,7 @@ class Prometheus(HttpHook):
         )
 
     async def __compute_hash(self, message: dict):
-        return hashlib.md5(bytes(str(message), "utf-8")).hexdigest()
+        return id(message)
 
     async def before_consume(self, message: dict):
         hash_message = await self.__compute_hash(message)
