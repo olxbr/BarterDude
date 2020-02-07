@@ -25,5 +25,7 @@ deploy:
     tags: true
     condition: $TRAVIS_PYTHON_VERSION = "3.6"
 
-services:
-    - rabbitmq 
+addons:
+  apt:
+    packages:
+    - rabbitmq-server 
