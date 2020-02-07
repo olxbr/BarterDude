@@ -25,7 +25,11 @@ class Healthcheck(HttpHook):
         self.__health_window = health_window
         self.__success = deque()
         self.__fail = deque()
+        self.__force_fail = False
         super(Healthcheck, self).__init__(barterdude, path)
+
+    def force_fail(self):
+        self.__force_fail = True
 
     async def on_success(self, message):
         self.__success.append(time())
@@ -34,6 +38,11 @@ class Healthcheck(HttpHook):
         self.__fail.append(time())
 
     async def __call__(self, *args, **kwargs):
+        if self.__force_fail:
+            return web.Response(
+                body="Healthcheck fail called manually",
+                status=500
+            )
         old_timestamp = time() - self.__health_window
         success = _remove_old(self.__success, old_timestamp)
         fail = _remove_old(self.__fail, old_timestamp)
