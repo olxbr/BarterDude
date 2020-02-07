@@ -39,16 +39,14 @@ class Prometheus(HttpHook):
     ):
         self.__registry = registry
         self.__labels = labels
-        self.__labelnames = list(labels.keys())
-        self.__labelvalues = list(labels.values())
         self._d = definition
-        self._time_bucket = {}
+        self._msg_start = {}
         self.__prepare_metrics()
         super(Prometheus, self).__init__(barterdude, path)
 
     def __prepare_metrics(self):
         default_kwargs = dict(
-            labelnames=self.__labelnames,
+            labelnames=list(self.__labels.keys()),
             namespace=self.NAMESPACE,
             unit=self.MESSAGE_UNITS,
             registry=self.__registry
@@ -64,15 +62,12 @@ class Prometheus(HttpHook):
             self.D_TIME_MEASURE, copy.deepcopy(default_kwargs)
         )
 
-    async def __compute_hash(self, message: dict):
-        return id(message)
-
     async def before_consume(self, message: dict):
-        hash_message = await self.__compute_hash(message)
+        hash_message = id(message)
         self._d.senders[self.D_BEFORE_CONSUME].labels(
             **self.__labels
         ).inc()
-        self._time_bucket[hash_message] = time.time()
+        self._msg_start[hash_message] = time.time()
 
     async def _on_complete(self,
                            message: dict,
@@ -80,16 +75,14 @@ class Prometheus(HttpHook):
                            error: Optional[Exception] = None):
 
         final_time = time.time()
-        hash_message = await self.__compute_hash(message)
+        hash_message = id(message)
         labels = self.__labels.copy()
         labels["state"] = state
         labels["error"] = str(type(error)) if (error) else None
         self._d.senders[state].labels(**labels).inc()
-        start_time = self._time_bucket.get(hash_message)
         self._d.senders[self.D_TIME_MEASURE].labels(**labels).observe(
-            final_time - start_time
+            final_time - self._msg_start.pop(hash_message)
         )
-        del self._time_bucket[hash_message]
 
     async def on_success(self, message: dict):
         await self._on_complete(message, self.D_SUCCESS)

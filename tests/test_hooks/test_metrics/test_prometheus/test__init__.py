@@ -119,11 +119,11 @@ class TestPrometheus(TestCase):
             return_value=mock_sender
         )
         await self.prometheus.before_consume(self.message)
-        self.assertEqual(len(self.prometheus._time_bucket), 1)
+        self.assertEqual(len(self.prometheus._msg_start), 1)
         await self.prometheus._on_complete(
             self.message, "my_state", Exception()
         )
         self.assertDictEqual(
-            self.prometheus._time_bucket,
+            self.prometheus._msg_start,
             {}
         )
