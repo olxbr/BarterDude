@@ -27,8 +27,8 @@ class TestLogging(TestCase):
 
     @patch("barterdude.hooks.logging.logging.error")
     async def test_should_log_on_fail(self, mock):
-        error = "KeyError"
-        await self.logging.on_fail(self.message, error)
+        await self.logging.on_fail(self.message, KeyError('key not find'))
+        error = "KeyError('key not find')"
         mock.assert_called_once()
         mock.assert_called_with(
             f"failed to consume message ({error}): {self.message}"

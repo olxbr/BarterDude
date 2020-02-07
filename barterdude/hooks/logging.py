@@ -10,4 +10,4 @@ class Logging(BaseHook):
         logging.info(f"successfully consumed message: {message}")
 
     async def on_fail(self, message, error):
-        logging.error(f"failed to consume message ({error}): {message}")
+        logging.error(f"failed to consume message ({repr(error)}): {message}")
