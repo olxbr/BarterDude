@@ -1,3 +1,4 @@
+dist: bionic
 language: python
 python:
   - "3.6"
@@ -15,16 +16,14 @@ before_deploy: sed -i "s/version=\".*\"/version=\"$TRAVIS_TAG\"/g" setup.py
 
 deploy:
   provider: pypi
-  user: $PYPI_USER
+  username: $PYPI_USER
   password: $PYPI_PASSWORD
-  skip_cleanup: true
+  cleanup: true
   skip_existing: true
   on:
     branch: master
     tags: true
     condition: $TRAVIS_PYTHON_VERSION = "3.6"
 
-addons:
-  apt:
-    packages:
-    - rabbitmq-server 
+services:
+    - rabbitmq 
