@@ -10,7 +10,7 @@ except ImportError:
 class Senders(dict):
 
     def __setitem__(self, name: str, sender: MetricWrapperBase):
-        if name in self.keys():
+        if name in self:
             value = self.__getitem__(name)
             raise ValueError(
                 f"Key {name} already exists with value {value}"
