@@ -5,15 +5,15 @@ from asyncworker import RouteTypes
 class BaseHook(metaclass=ABCMeta):
     @abstractmethod
     async def on_success(self, message):
-        pass
+        '''Called after successfuly consumed the message'''
 
     @abstractmethod
     async def on_fail(self, message, error):
-        pass
+        '''Called when fails to consume the message'''
 
     @abstractmethod
     async def before_consume(self, message):
-        pass
+        '''Called before consuming the message'''
 
 
 class HttpHook(BaseHook):
