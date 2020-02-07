@@ -21,7 +21,7 @@ class RabbitMQConsumerTest(TestCase):
         self.successful_message_value_is_equal = False
         self.successful_message_value_is_equal_first = False
         self.successful_message_value_is_equal_second = False
-        self.connection = AMQPConnection(
+        self.connection = AMQPConnection(  # nosec
             name=self.connection_name,
             hostname="127.0.0.1",
             username="guest",
