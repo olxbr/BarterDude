@@ -9,9 +9,9 @@ from asyncworker.connections import AMQPConnection
 
 
 class RabbitMQConsumerTest(TestCase):
-    
+
     use_default_loop = True
-    
+
     async def setUp(self):
         self.queue_name = "test"
         self.exchange_name = "test_exchange"
