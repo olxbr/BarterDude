@@ -69,10 +69,10 @@ Before you submit your pull request consider the following guidelines:
 
 * Create your patch, **including appropriate test cases**.
 * Follow our [Code Style](https://www.pylint.org/) with Flake8 and [PEP8](https://www.python.org/dev/peps/pep-0008/).
-* Configure pre-commit using the below command.
+* Run lint.
 
     ```
-    pre-commit install
+    make lint
     ```
 * Run the full test suite, including `make test`,
   and ensure that all tests pass.
