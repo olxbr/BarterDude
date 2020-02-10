@@ -8,7 +8,7 @@ except ImportError:
     Please install extra dependency with:
         `pip install barterdude[prometheus]`
     """)
-from barterdude.hooks.metrics.prometheus.senders import Senders
+from barterdude.hooks.metrics.prometheus.metrics import Metrics
 
 
 class Definition:
@@ -18,17 +18,17 @@ class Definition:
     def __init__(
         self,
         histogram_buckets: tuple = Histogram.DEFAULT_BUCKETS,
-        senders: Senders = Senders()
+        metrics: Metrics = Metrics()
     ):
         self.__histogram_buckets = histogram_buckets
-        self.__senders = senders
+        self.__metrics = metrics
 
     @property
-    def senders(self):
-        return self.__senders
+    def metrics(self):
+        return self.__metrics
 
     def prepare_before_consume(self, name, default_kwargs: dict):
-        self.senders[name] = Counter(
+        self.metrics[name] = Counter(
                 name="received_number_before_consume",
                 documentation="Messages that worker received from queue(s)",
                 **default_kwargs
@@ -37,7 +37,7 @@ class Definition:
     def prepare_on_complete(self, state, default_kwargs: dict):
         default_kwargs["labelnames"] += ["state", "error"]
 
-        self.senders[state] = Counter(
+        self.metrics[state] = Counter(
                 name=f"consumed_number_on_{state}",
                 documentation=(f"Messages that worker consumed with {state}"
                                " from queue(s)"),
@@ -48,7 +48,7 @@ class Definition:
         default_kwargs["labelnames"] += ["state", "error"]
         default_kwargs["unit"] = self.TIME_UNIT
 
-        self.senders[name] = Histogram(
+        self.metrics[name] = Histogram(
                 name="time_spent_processing_message",
                 documentation=("Time spent when function was "
                                "processing a message"),

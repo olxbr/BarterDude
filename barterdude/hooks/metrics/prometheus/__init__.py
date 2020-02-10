@@ -64,7 +64,7 @@ class Prometheus(HttpHook):
 
     async def before_consume(self, message: dict):
         hash_message = id(message)
-        self._d.senders[self.D_BEFORE_CONSUME].labels(
+        self._d.metrics[self.D_BEFORE_CONSUME].labels(
             **self.__labels
         ).inc()
         self._msg_start[hash_message] = time.time()
@@ -79,8 +79,8 @@ class Prometheus(HttpHook):
         labels = self.__labels.copy()
         labels["state"] = state
         labels["error"] = str(type(error)) if (error) else None
-        self._d.senders[state].labels(**labels).inc()
-        self._d.senders[self.D_TIME_MEASURE].labels(**labels).observe(
+        self._d.metrics[state].labels(**labels).inc()
+        self._d.metrics[self.D_TIME_MEASURE].labels(**labels).observe(
             final_time - self._msg_start.pop(hash_message)
         )
 

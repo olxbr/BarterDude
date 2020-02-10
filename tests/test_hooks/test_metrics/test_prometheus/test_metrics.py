@@ -1,19 +1,19 @@
 from asynctest import TestCase, Mock
 from prometheus_client.metrics import MetricWrapperBase
 
-from barterdude.hooks.metrics.prometheus.senders import Senders
+from barterdude.hooks.metrics.prometheus.metrics import Metrics
 
 
-class TestSenders(TestCase):
+class TestMetrics(TestCase):
     def test_should_set_and_get_items(self):
-        senders = Senders()
+        metrics = Metrics()
         metric_mock = Mock(spec=MetricWrapperBase)
-        senders["metric"] = metric_mock
-        self.assertEqual(senders["metric"], metric_mock)
+        metrics["metric"] = metric_mock
+        self.assertEqual(metrics["metric"], metric_mock)
 
     def test_should_raising_error_setting_duplicate_keys(self):
-        senders = Senders()
+        metrics = Metrics()
         metric_mock = Mock(spec=MetricWrapperBase)
-        senders["metric"] = metric_mock
+        metrics["metric"] = metric_mock
         with self.assertRaises(ValueError):
-            senders["metric"] = metric_mock
+            metrics["metric"] = metric_mock
