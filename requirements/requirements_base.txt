@@ -1,1 +1,2 @@
 async-worker==0.11.1
+aioamqp==0.14.0
