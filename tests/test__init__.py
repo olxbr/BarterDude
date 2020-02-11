@@ -1,102 +1,120 @@
-from asynctest import Mock, TestCase, CoroutineMock
-from tests.helpers import get_app
-
-from asyncworker.routes import AMQPRoute, RouteTypes
-from asyncworker.easyqueue.queue import JsonQueue
-
-from barterdude.monitor import Monitor
+from asynctest import Mock, TestCase, CoroutineMock, patch, call
+from asyncworker import Options, RouteTypes
+from barterdude import BarterDude
 
 
 class TestBarterDude(TestCase):
-    async def setUp(self):
-
-        self.queue = JsonQueue(
-            "localhost", "username", "pass"
-        )
-        self.queue.put = CoroutineMock()
-        self.queue.consume = Mock()
-        self.app = get_app()
-        self.app.get_connection = Mock(return_value=self.queue)
-        self.monitor = Monitor()
+    @patch("barterdude.App")
+    @patch("barterdude.AMQPConnection")
+    def setUp(self, AMQPConnection, App):
+        self.monitor = Mock()
         self.monitor.dispatch_before_consume = CoroutineMock()
-        self.monitor.dispatch_on_fail = CoroutineMock()
         self.monitor.dispatch_on_success = CoroutineMock()
+        self.monitor.dispatch_on_fail = CoroutineMock()
+        self.callback = CoroutineMock()
+        self.messages = [Mock() for _ in range(10)]
+        self.calls = [call(message.body) for message in self.messages]
 
-    async def test_should_call_put_on_forward(self):
-        @self.app.forward("conn1", ["test"], "vhost", "routing")
-        async def test_decorated(message):
-            return None
-        self.queue.put.assert_not_called()
-        await test_decorated({})
-        self.queue.put.assert_called_once()
-        self.queue.put.assert_called_with(
-            body={}, exchange='test', routing_key='routing', vhost='vhost'
+        self.AMQPConnection = AMQPConnection
+        self.connection = self.AMQPConnection.return_value
+        self.App = App
+        self.app = self.App.return_value
+        self.app.startup = CoroutineMock()
+        self.app.shutdown = CoroutineMock()
+        self.decorator = self.app.route.return_value
+
+        self.barterdude = BarterDude()
+
+    def test_should_create_connection(self):
+        self.AMQPConnection.assert_called_once_with(  # nosec
+            hostname="127.0.0.1",
+            username="guest",
+            password="guest",
+            prefetch=10,
+            name="default",
         )
+        self.App.assert_called_once_with(connections=[self.connection])
+
+    def test_should_call_route_when_created(self):
+        self.barterdude.consume_amqp(
+            ["queue"],
+            vhost="vhost",
+            routing_key="routing_key"
+        )(CoroutineMock())
+        self.app.route.assert_called_once_with(
+            ["queue"],
+            type=RouteTypes.AMQP_RABBITMQ,
+            options={Options.BULK_SIZE: 10},
+            vhost="vhost",
+            routing_key="routing_key"
+        )
+
+    def test_should_call_route_when_adding_endpoint(self):
+        hook = Mock()
+        self.barterdude.add_endpoint(['/my_route'], ['GET'], hook)
+        self.app.route.assert_called_once_with(
+            routes=['/my_route'],
+            methods=['GET'],
+            type=RouteTypes.HTTP
+        )
+        self.decorator.assert_called_once_with(hook)
+
+    async def test_should_call_callback_for_each_message(self):
+        self.barterdude.consume_amqp(["queue"], self.monitor)(self.callback)
+        self.decorator.assert_called_once()
+        wrapper = self.decorator.call_args[0][0]
+        await wrapper(self.messages)
+        self.callback.assert_has_calls(self.calls, any_order=True)
+
+    async def test_should_call_reject_when_callback_fail(self):
+        self.callback.side_effect = Exception('Boom!')
+        self.barterdude.consume_amqp(["queue"], self.monitor)(self.callback)
+        wrapper = self.decorator.call_args[0][0]
+        await wrapper(self.messages)
+        for message in self.messages:
+            message.reject.assert_called_once()
 
     async def test_should_call_monitor_for_each_success_message(self):
-
-        @self.app.observe(self.monitor)
-        async def test_decorated(message):
-            return None
-        await test_decorated({})
-        self.monitor.dispatch_before_consume.assert_called_once()
-        self.monitor.dispatch_before_consume.assert_called_with({})
-        self.monitor.dispatch_on_success.assert_called_once()
-        self.monitor.dispatch_on_success.assert_called_with({})
+        self.barterdude.consume_amqp(["queue"], self.monitor)(self.callback)
+        wrapper = self.decorator.call_args[0][0]
+        await wrapper(self.messages)
+        self.monitor.dispatch_before_consume.assert_has_calls(
+            self.calls, any_order=True)
+        self.monitor.dispatch_on_success.assert_has_calls(
+            self.calls, any_order=True)
         self.monitor.dispatch_on_fail.assert_not_called()
 
     async def test_should_call_monitor_for_each_fail_message(self):
-
-        exception = Exception()
-        @self.app.observe(self.monitor)
-        async def test_decorated(message):
-            raise exception
-            return None
-        with self.assertRaises(Exception):
-            await test_decorated({})
-        self.monitor.dispatch_before_consume.assert_called_once()
-        self.monitor.dispatch_before_consume.assert_called_with({})
-        self.monitor.dispatch_on_fail.assert_called_once()
-        self.monitor.dispatch_on_fail.assert_called_with({}, exception)
+        error = Exception('Boom!')
+        self.callback.side_effect = error
+        self.barterdude.consume_amqp(["queue"], self.monitor)(self.callback)
+        wrapper = self.decorator.call_args[0][0]
+        await wrapper(self.messages)
+        self.monitor.dispatch_before_consume.assert_has_calls(
+            self.calls, any_order=True)
+        error_calls = [call(message.body, error) for message in self.messages]
+        self.monitor.dispatch_on_fail.assert_has_calls(
+            error_calls, any_order=True)
         self.monitor.dispatch_on_success.assert_not_called()
 
-    async def test_should_call_put_on_forward_when_call_route(self):
-        @self.app.route(
-            ["test_route"], RouteTypes.AMQP_RABBITMQ
+    async def test_should_call_put_when_publish(self):
+        data = Mock()
+        self.connection.put  = CoroutineMock()
+        await self.barterdude.publish_amqp(
+            'exchange',
+            data,
+            vhost="vhost",
+            routing_key="routing_key"
         )
-        @self.app.forward(
-            "conn1", ["test"], "vhost", "routing"
-        )
-        async def test_decorated(message):
-            return None
-        self.queue.put.assert_not_called()
-        self.assertEqual(len(self.app.routes_registry), 1)
-        self.assertIsInstance(
-            self.app.routes_registry[test_decorated], AMQPRoute
-        )
-        await test_decorated({})
-        self.queue.put.assert_called_once()
-        self.queue.put.assert_called_with(
-            body={}, exchange='test', routing_key='routing', vhost='vhost'
+        self.connection.put.assert_called_once_with(
+            exchange='exchange',
+            data=data,
+            vhost="vhost",
+            routing_key="routing_key"
         )
 
-    async def test_should_get_error_when_call_route_inverse_decorated(self):
-
-        @self.app.forward(
-            "conn1", ["test"], "vhost", "routing"
-        )
-        @self.app.route(
-            ["test_route"], RouteTypes.AMQP_RABBITMQ
-        )
-        async def test_decorated(message):
-            return None
-        self.queue.put.assert_not_called()
-        self.assertEqual(len(self.app.routes_registry), 1)
-
-        with self.assertRaises(KeyError):
-            self.app.routes_registry[test_decorated]
-        await test_decorated({})
-        self.queue.put.assert_called_once()
-        self.queue.put.assert_called_with(
-            body={}, exchange='test', routing_key='routing', vhost='vhost'
-        )
+    async def test_should_call_startup_and_shutdown(self):
+        await self.barterdude.startup()
+        self.app.startup.assert_called_once_with()
+        await self.barterdude.shutdown()
+        self.app.shutdown.assert_called_once_with()

@@ -1,46 +1,81 @@
-from asyncworker import App
+from asyncio import gather
+from asyncworker import App, Options, RouteTypes
+from asyncworker.connections import AMQPConnection
 from typing import Iterable
 from barterdude.monitor import Monitor
 
 
-class BarterDude(App):
-    def forward(
+class BarterDude():
+    def __init__(  # nosec
         self,
-        conn_name: str,
-        exchanges: Iterable[str],
-        vhost: str = "",
-        routing_key: str = ""
+        hostname: str = "127.0.0.1",
+        username: str = "guest",
+        password: str = "guest",
+        prefetch: int = 10,
+        connection_name: str = "default",
+    ):
+        self.__prefetch = prefetch
+        self.__connection = AMQPConnection(
+            name=connection_name,
+            hostname=hostname,
+            username=username,
+            password=password,
+            prefetch=prefetch
+        )
+        self.__app = App(connections=[self.__connection])
 
+    def add_endpoint(self, routes, methods, hook):
+        self.__app.route(
+            routes=routes,
+            methods=methods,
+            type=RouteTypes.HTTP
+        )(hook)
+
+    def consume_amqp(
+        self,
+        queues: Iterable[str],
+        monitor: Monitor = Monitor(),
+        **kwargs,
     ):
         def decorator(f):
-            async def wrapper(message):
-                returned = await f(message)
-                for exchange in exchanges:
-                    await self.get_connection(conn_name).put(
-                        body=message,
-                        routing_key=routing_key,
-                        exchange=exchange,
-                        vhost=vhost
-                    )
-                return returned
-
-            return wrapper
-
-        return decorator
-
-    def observe(self, monitor: Monitor):
-        def decorator(f):
-            async def wrapper(message):
-                await monitor.dispatch_before_consume(message)
+            async def process_message(message):
+                body = message.body
+                await monitor.dispatch_before_consume(body)
                 try:
-                    returned = await f(message)
+                    await f(body)
                 except Exception as error:
-                    await monitor.dispatch_on_fail(message, error)
-                    raise error
+                    await monitor.dispatch_on_fail(body, error)
+                    message.reject()
                 else:
-                    await monitor.dispatch_on_success(message)
-                    return returned
+                    await monitor.dispatch_on_success(body)
 
-            return wrapper
+            @self.__app.route(
+                queues,
+                type=RouteTypes.AMQP_RABBITMQ,
+                options={Options.BULK_SIZE: self.__prefetch},
+                **kwargs
+            )
+            async def wrapper(messages):
+                await gather(*map(process_message, messages))
 
         return decorator
+
+    async def publish_amqp(
+        self,
+        exchange: str,
+        data: dict,
+        routing_key: str = "",
+        **kwargs,
+    ):
+        await self.__connection.put(
+            exchange=exchange,
+            data=data,
+            routing_key=routing_key,
+            **kwargs
+        )
+
+    async def startup(self):
+        await self.__app.startup()
+
+    async def shutdown(self):
+        await self.__app.shutdown()

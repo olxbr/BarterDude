@@ -1,6 +1,5 @@
 import freezegun
 from asynctest import TestCase, MagicMock, Mock, patch
-from tests.helpers import get_app
 
 from barterdude.hooks.metrics.prometheus import Prometheus
 from barterdude.hooks.metrics.prometheus.definition import Definition
@@ -8,7 +7,7 @@ from barterdude.hooks.metrics.prometheus.definition import Definition
 
 class TestPrometheus(TestCase):
     def setUp(self):
-        self.app = get_app()
+        self.app = Mock()
         self.registry = Mock()
         self.metrics = MagicMock()
         self.mock_metric = Mock()
