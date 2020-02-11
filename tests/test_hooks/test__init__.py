@@ -21,3 +21,17 @@ class TestHttpHook(TestCase):
             methods=["GET"],
             type=RouteTypes.HTTP
         )
+
+    async def test_should_fail_when_calling_unimplemented_methods(self):
+        hook = HttpHook(
+            self.app,
+            "/my_little_route"
+        )
+        with self.assertRaises(NotImplementedError):
+            await hook()
+        with self.assertRaises(NotImplementedError):
+            await hook.before_consume(None)
+        with self.assertRaises(NotImplementedError):
+            await hook.on_success(None)
+        with self.assertRaises(NotImplementedError):
+            await hook.on_fail(None, None)
