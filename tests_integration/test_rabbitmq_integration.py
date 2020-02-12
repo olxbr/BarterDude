@@ -1,30 +1,23 @@
 import asyncio
 
-from asynctest import TestCase
-
+from asynctest import TestCase, CoroutineMock
 from barterdude import BarterDude
-
 from asyncworker import RouteTypes
 from asyncworker.connections import AMQPConnection
+from random import choices
+from string import ascii_uppercase
 
 
 class RabbitMQConsumerTest(TestCase):
-
     use_default_loop = True
 
     async def setUp(self):
-        self.queue_name = "test"
-        self.exchange_name = "test_exchange"
-        self.output_queue_name = "test_output"
-        self.connection_name = "default"
-        self.consume_callback_shoud_not_be_called = False
-        self.handler_with_requeue_called = 0
-        self.handler_without_requeue_called = 0
-        self.successful_message_value_is_equal = False
-        self.successful_message_value_is_equal_first = False
-        self.successful_message_value_is_equal_second = False
+        self.input_queue = "test"
+        self.output_exchange = "test_exchange"
+        self.output_queue = "test_output"
+
         self.connection = AMQPConnection(  # nosec
-            name=self.connection_name,
+            name="barterdude-test",
             hostname="127.0.0.1",
             username="guest",
             password="guest",
@@ -33,127 +26,116 @@ class RabbitMQConsumerTest(TestCase):
         self.queue_manager = self.connection["/"]
         await self.queue_manager.connection._connect()
         await self.queue_manager.connection.channel.queue_declare(
-            self.queue_name
+            self.input_queue
         )
         await self.queue_manager.connection.channel.exchange_declare(
-            self.exchange_name, "direct"
+            self.output_exchange, "direct"
         )
         await self.queue_manager.connection.channel.queue_declare(
-            self.output_queue_name
+            self.output_queue
         )
         await self.queue_manager.connection.channel.queue_bind(
-            self.output_queue_name, self.exchange_name, ""
+            self.output_queue, self.output_exchange, ""
         )
-        self.app = BarterDude(connections=[self.connection])
+
+        self.messages = []
+        for i in range(10):
+            message = {"key": "".join(choices(ascii_uppercase, k=16))}
+            self.messages.append(message)
+
+        self.app = BarterDude()
 
     async def tearDown(self):
-        self.handler_without_requeue_called = 0
-        self.handler_with_requeue_called = 0
         await self.queue_manager.connection.channel.queue_delete(
-            self.queue_name
+            self.input_queue
         )
         await self.queue_manager.connection.channel.queue_delete(
-            self.output_queue_name
+            self.output_queue
         )
         await self.queue_manager.connection.channel.exchange_delete(
-            self.exchange_name
+            self.output_exchange
         )
         await self.queue_manager.connection.close()
 
-    async def test_process_one_successful_message(self):
+    async def test_process_ons_successful_message(self):
+        handler = CoroutineMock()
+        self.app.consume_amqp([self.input_queue])(handler)
 
-        message = {"key": "value"}
+        await self.app.startup()
+        await self.queue_manager.put(
+            routing_key=self.input_queue,
+            data=self.messages[0]
+        )
+        await asyncio.sleep(1)
+        handler.assert_called_once_with(self.messages[0])
+        await self.app.shutdown()
 
-        @self.app.route([self.queue_name], type=RouteTypes.AMQP_RABBITMQ)
-        async def handler(messages):
-            self.successful_message_value_is_equal = (
-                messages[0].body["key"] == message["key"]
+    async def test_process_one_message_and_publish(self):
+        @self.app.consume_amqp([self.input_queue])
+        async def forward(message):
+            await self.app.publish_amqp(
+                self.output_exchange,
+                self.messages[1]
             )
 
-        await self.app.startup()
+        handler = CoroutineMock()
+        self.app.consume_amqp([self.output_queue])(handler)
 
-        await self.queue_manager.put(routing_key=self.queue_name, data=message)
+        await self.app.startup()
+        await self.queue_manager.put(
+            routing_key=self.input_queue,
+            data=self.messages[0]
+        )
         await asyncio.sleep(1)
-        self.assertTrue(self.successful_message_value_is_equal)
+        handler.assert_called_once_with(self.messages[1])
         await self.app.shutdown()
 
-    # async def test_process_one_successful_message_and_forward_exchange(self):
+    #async def test_process_message_reject_with_requeue(self):
 
-    #     message = {"key": "value"}
+    #    @self.app.route([self.input_queue], type=RouteTypes.AMQP_RABBITMQ)
+    #    async def other_handler(messages):
+    #        if self.handler_with_requeue_called > 0:
+    #            messages[0].accept()
+    #        else:
+    #            self.handler_with_requeue_called += 1
+    #        messages[0].field  # AttributeError
 
-    #     @self.app.route([self.queue_name], type=RouteTypes.AMQP_RABBITMQ)
-    #     @self.app.forward(self.connection_name, [self.exchange_name])
-    #     async def handler(messages):
-    #         self.successful_message_value_is_equal_first = (
-    #             messages[0].body["key"] == message["key"]
-    #         )
+    #    await self.app.startup()
 
-    #     @self.app.route([self.output_queue_name],
-    #                     type=RouteTypes.AMQP_RABBITMQ)
-    #     async def other_handler(messages):
-    #         if self.successful_message_value_is_equal_first:
-    #             self.successful_message_value_is_equal_second = (
-    #                 messages[0].body["key"] == message["key"]
-    #             )
-    #         else:
-    #             self.successful_message_value_is_equal_second = False
-    #         self.successful_message_value_is_equal_second = messages
+    #    await self.queue_manager.put(
+    #        routing_key=self.input_queue,
+    #        data={"key": "handler_with_requeue_then_ack"},
+    #    )
+    #    await asyncio.sleep(2)
+    #    self.assertEqual(1, self.handler_with_requeue_called)
+    #    await self.app.shutdown()
 
-    #     await self.app.startup()
+    #async def test_process_message_reject_without_requeue(self):
 
-    #     await self.queue_manager.put(
-    #       routing_key=self.queue_name, data=message)
-    #     await asyncio.sleep(2)
-    #     self.assertTrue(self.successful_message_value_is_equal_first)
-    #     self.assertTrue(self.successful_message_value_is_equal_second)
-    #     await self.app.shutdown()
+    #    @self.app.route([self.input_queue], type=RouteTypes.AMQP_RABBITMQ)
+    #    async def other_handler(messages):
+    #        self.handler_without_requeue_called += 1
+    #        messages[0].reject(requeue=False)
+    #        messages[0].field  # AttributeError
 
-    async def test_process_message_reject_with_requeue(self):
+    #    await self.app.startup()
 
-        @self.app.route([self.queue_name], type=RouteTypes.AMQP_RABBITMQ)
-        async def other_handler(messages):
-            if self.handler_with_requeue_called > 0:
-                messages[0].accept()
-            else:
-                self.handler_with_requeue_called += 1
-            messages[0].field  # AttributeError
+    #    await self.queue_manager.put(
+    #        routing_key=self.input_queue,
+    #        data={"key": "handler_without_requeue"}
+    #    )
+    #    await asyncio.sleep(2)
+    #    self.assertEqual(1, self.handler_without_requeue_called)
 
-        await self.app.startup()
+    #    await self.app.shutdown()
 
-        await self.queue_manager.put(
-            routing_key=self.queue_name,
-            data={"key": "handler_with_requeue_then_ack"},
-        )
-        await asyncio.sleep(2)
-        self.assertEqual(1, self.handler_with_requeue_called)
-        await self.app.shutdown()
+    #    async def callback(*args, **kwargs):
+    #        self.consume_callback_shoud_not_be_called = True
 
-    async def test_process_message_reject_without_requeue(self):
-
-        @self.app.route([self.queue_name], type=RouteTypes.AMQP_RABBITMQ)
-        async def other_handler(messages):
-            self.handler_without_requeue_called += 1
-            messages[0].reject(requeue=False)
-            messages[0].field  # AttributeError
-
-        await self.app.startup()
-
-        await self.queue_manager.put(
-            routing_key=self.queue_name,
-            data={"key": "handler_without_requeue"}
-        )
-        await asyncio.sleep(2)
-        self.assertEqual(1, self.handler_without_requeue_called)
-
-        await self.app.shutdown()
-
-        async def callback(*args, **kwargs):
-            self.consume_callback_shoud_not_be_called = True
-
-        await self.queue_manager.connection.channel.basic_consume(
-            callback, queue_name=self.queue_name
-        )
-        await asyncio.sleep(5)
-        self.assertFalse(
-            self.consume_callback_shoud_not_be_called
-        )
+    #    await self.queue_manager.connection.channel.basic_consume(
+    #        callback, queue_name=self.input_queue
+    #    )
+    #    await asyncio.sleep(5)
+    #    self.assertFalse(
+    #        self.consume_callback_shoud_not_be_called
+    #    )
