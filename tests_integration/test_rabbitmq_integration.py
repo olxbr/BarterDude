@@ -2,7 +2,6 @@ import asyncio
 
 from asynctest import TestCase, CoroutineMock
 from barterdude import BarterDude
-from asyncworker import RouteTypes
 from asyncworker.connections import AMQPConnection
 from random import choices
 from string import ascii_uppercase
@@ -89,53 +88,3 @@ class RabbitMQConsumerTest(TestCase):
         await asyncio.sleep(1)
         handler.assert_called_once_with(self.messages[1])
         await self.app.shutdown()
-
-    #async def test_process_message_reject_with_requeue(self):
-
-    #    @self.app.route([self.input_queue], type=RouteTypes.AMQP_RABBITMQ)
-    #    async def other_handler(messages):
-    #        if self.handler_with_requeue_called > 0:
-    #            messages[0].accept()
-    #        else:
-    #            self.handler_with_requeue_called += 1
-    #        messages[0].field  # AttributeError
-
-    #    await self.app.startup()
-
-    #    await self.queue_manager.put(
-    #        routing_key=self.input_queue,
-    #        data={"key": "handler_with_requeue_then_ack"},
-    #    )
-    #    await asyncio.sleep(2)
-    #    self.assertEqual(1, self.handler_with_requeue_called)
-    #    await self.app.shutdown()
-
-    #async def test_process_message_reject_without_requeue(self):
-
-    #    @self.app.route([self.input_queue], type=RouteTypes.AMQP_RABBITMQ)
-    #    async def other_handler(messages):
-    #        self.handler_without_requeue_called += 1
-    #        messages[0].reject(requeue=False)
-    #        messages[0].field  # AttributeError
-
-    #    await self.app.startup()
-
-    #    await self.queue_manager.put(
-    #        routing_key=self.input_queue,
-    #        data={"key": "handler_without_requeue"}
-    #    )
-    #    await asyncio.sleep(2)
-    #    self.assertEqual(1, self.handler_without_requeue_called)
-
-    #    await self.app.shutdown()
-
-    #    async def callback(*args, **kwargs):
-    #        self.consume_callback_shoud_not_be_called = True
-
-    #    await self.queue_manager.connection.channel.basic_consume(
-    #        callback, queue_name=self.input_queue
-    #    )
-    #    await asyncio.sleep(5)
-    #    self.assertFalse(
-    #        self.consume_callback_shoud_not_be_called
-    #    )

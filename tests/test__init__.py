@@ -102,7 +102,7 @@ class TestBarterDude(TestCase):
 
     async def test_should_call_put_when_publish(self):
         data = Mock()
-        self.connection.put  = CoroutineMock()
+        self.connection.put = CoroutineMock()
         await self.barterdude.publish_amqp(
             'exchange',
             data,
