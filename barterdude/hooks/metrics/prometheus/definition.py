@@ -4,7 +4,7 @@ try:
         Histogram
     )
 except ImportError:
-    print("""
+    raise ImportError("""
     Please install extra dependency with:
         `pip install barterdude[prometheus]`
     """)

@@ -14,7 +14,7 @@ try:
         CONTENT_TYPE_LATEST
     )
 except ImportError:
-    print("""
+    raise ImportError("""
     Please install extra dependency with:
         `pip install barterdude[prometheus]`
     """)
