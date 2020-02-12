@@ -32,7 +32,7 @@ setup(
     url='https://github.com/olxbr/BarterDude/',
     download_url='https://github.com/olxbr/BarterDude/archive/master.zip',
     install_requires=requirements,
-    extra_require=extra,
+    extras_require=extra,
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: Apache Software License",
