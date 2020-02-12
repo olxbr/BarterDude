@@ -121,3 +121,7 @@ class TestBarterDude(TestCase):
         self.app.startup.assert_called_once_with()
         await self.barterdude.shutdown()
         self.app.shutdown.assert_called_once_with()
+
+    def test_should_call_run(self):
+        self.barterdude.run()
+        self.app.run.assert_called_once_with()

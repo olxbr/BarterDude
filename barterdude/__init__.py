@@ -85,3 +85,6 @@ class BarterDude():
 
     async def shutdown(self):
         await self.__app.shutdown()
+
+    def run(self):
+        self.__app.run()
