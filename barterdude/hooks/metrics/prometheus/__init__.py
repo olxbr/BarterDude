@@ -1,5 +1,4 @@
 import time
-import copy
 from aiohttp import web
 from typing import Optional
 
@@ -23,6 +22,7 @@ except ImportError:
 class Prometheus(HttpHook):
 
     MESSAGE_UNITS = "messages"
+    TIME_UNITS = "seconds"
     NAMESPACE = "barterdude"
     D_BEFORE_CONSUME = "before_consume"
     D_SUCCESS = "success"
@@ -45,21 +45,33 @@ class Prometheus(HttpHook):
         super(Prometheus, self).__init__(barterdude, path)
 
     def __prepare_metrics(self):
-        default_kwargs = dict(
+        self._d.prepare_before_consume(
+            self.D_BEFORE_CONSUME,
             labelnames=list(self.__labels.keys()),
             namespace=self.NAMESPACE,
             unit=self.MESSAGE_UNITS,
             registry=self.__registry
         )
-        self._d.prepare_before_consume(
-            self.D_BEFORE_CONSUME, copy.deepcopy(default_kwargs)
+        self._d.prepare_on_complete(
+            self.D_SUCCESS,
+            labelnames=list(self.__labels.keys()),
+            namespace=self.NAMESPACE,
+            unit=self.MESSAGE_UNITS,
+            registry=self.__registry
         )
         self._d.prepare_on_complete(
-            self.D_SUCCESS, copy.deepcopy(default_kwargs)
+            self.D_FAIL,
+            labelnames=list(self.__labels.keys()),
+            namespace=self.NAMESPACE,
+            unit=self.MESSAGE_UNITS,
+            registry=self.__registry
         )
-        self._d.prepare_on_complete(self.D_FAIL, copy.deepcopy(default_kwargs))
         self._d.prepare_time_measure(
-            self.D_TIME_MEASURE, copy.deepcopy(default_kwargs)
+            self.D_TIME_MEASURE,
+            labelnames=list(self.__labels.keys()),
+            namespace=self.NAMESPACE,
+            unit=self.TIME_UNITS,
+            registry=self.__registry
         )
 
     async def before_consume(self, message: dict):
