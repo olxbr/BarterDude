@@ -1,6 +1,5 @@
-from asynctest import TestCase
+from asynctest import TestCase, Mock
 from freezegun import freeze_time
-from tests.helpers import get_app
 from barterdude.hooks.healthcheck import Healthcheck
 
 
@@ -10,7 +9,7 @@ class TestHealthcheck(TestCase):
         self.success_rate = 0.9
         self.health_window = 60.0
         self.healthcheck = Healthcheck(
-            get_app(),
+            Mock(),
             "/healthcheck",
             self.success_rate,
             self.health_window

@@ -1,25 +1,21 @@
 from asynctest import TestCase, Mock
-from tests.helpers import get_app
-
-from asyncworker import RouteTypes
 from barterdude.hooks import HttpHook
 
 
 class TestHttpHook(TestCase):
     def setUp(self):
-        self.app = get_app()
+        self.app = Mock()
 
     def test_should_call_http_route_from_hook(self):
-        self.app.route = Mock()
-        HttpHook(
+        hook = HttpHook(
             self.app,
             "/my_little_route"
         )
-        self.app.route.assert_called_once()
-        self.app.route.assert_called_with(
+        self.app.add_endpoint.assert_called_once()
+        self.app.add_endpoint.assert_called_with(
             routes=["/my_little_route"],
             methods=["GET"],
-            type=RouteTypes.HTTP
+            hook=hook
         )
 
     async def test_should_fail_when_calling_unimplemented_methods(self):

@@ -1,5 +1,4 @@
 from abc import ABCMeta, abstractmethod
-from asyncworker import RouteTypes
 from barterdude import BarterDude
 
 
@@ -18,18 +17,12 @@ class BaseHook(metaclass=ABCMeta):
 
 
 class HttpHook(BaseHook):
-    def __init__(self, baterdude: BarterDude, path: str):
-        self.__barterdude = baterdude
-        self.__path = path
-
-        self._start_server()
-
-    def _start_server(self):
-        self.__barterdude.route(
-            routes=[self.__path],
+    def __init__(self, barterdude: BarterDude, path: str):
+        barterdude.add_endpoint(
+            routes=[path],
             methods=["GET"],
-            type=RouteTypes.HTTP
-        )(self)
+            hook=self
+        )
 
     async def __call__(self, *args, **kwargs):
         raise NotImplementedError
