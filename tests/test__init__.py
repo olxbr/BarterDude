@@ -44,7 +44,10 @@ class TestBarterDude(TestCase):
         self.app.route.assert_called_once_with(
             ["queue"],
             type=RouteTypes.AMQP_RABBITMQ,
-            options={Options.BULK_SIZE: 10},
+            options={
+                Options.BULK_SIZE: 1,
+                Options.BULK_FLUSH_INTERVAL: 60
+            },
             vhost="vhost",
             routing_key="routing_key"
         )

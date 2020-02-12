@@ -14,7 +14,6 @@ class BarterDude():
         prefetch: int = 10,
         connection_name: str = "default",
     ):
-        self.__prefetch = prefetch
         self.__connection = AMQPConnection(
             name=connection_name,
             hostname=hostname,
@@ -35,6 +34,8 @@ class BarterDude():
         self,
         queues: Iterable[str],
         monitor: Monitor = Monitor(),
+        bulk_size: int = 1,
+        bulk_flush_interval: int = 60,
         **kwargs,
     ):
         def decorator(f):
@@ -52,7 +53,10 @@ class BarterDude():
             @self.__app.route(
                 queues,
                 type=RouteTypes.AMQP_RABBITMQ,
-                options={Options.BULK_SIZE: self.__prefetch},
+                options={
+                    Options.BULK_SIZE: bulk_size,
+                    Options.BULK_FLUSH_INTERVAL: bulk_flush_interval
+                },
                 **kwargs
             )
             async def wrapper(messages):
@@ -69,7 +73,7 @@ class BarterDude():
         routing_key: str = "",
         **kwargs,
     ):
-        return await self.__connection.put(
+        await self.__connection.put(
             exchange=exchange,
             data=data,
             routing_key=routing_key,
