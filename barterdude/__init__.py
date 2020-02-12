@@ -58,6 +58,8 @@ class BarterDude():
             async def wrapper(messages):
                 await gather(*map(process_message, messages))
 
+            return wrapper
+
         return decorator
 
     async def publish_amqp(
@@ -67,7 +69,7 @@ class BarterDude():
         routing_key: str = "",
         **kwargs,
     ):
-        await self.__connection.put(
+        return await self.__connection.put(
             exchange=exchange,
             data=data,
             routing_key=routing_key,
