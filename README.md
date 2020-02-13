@@ -14,7 +14,7 @@ Using Python 3.6+
 pip install barterdude
 ```
 
-if you want Prometheus integration
+if you want Prometheus integration, run the command:
 
 ```sh
 pip install barterdude[prometheus] # or pip install barterdude[all]
@@ -32,7 +32,7 @@ from barterdude.hooks.logging import Logging
 from barterdude.hooks.metrics.prometheus import Prometheus
 from asyncworker.rabbitmq.message import RabbitMQMessage
 
-# from my_project import MyHook (you can build your own hooks)
+# from my_project import MyHook # (you can build your own hooks)
 
 
 # configure RabbitMQ
