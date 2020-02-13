@@ -25,6 +25,8 @@ deploy:
     tags: true
     condition: $TRAVIS_PYTHON_VERSION = "3.6"
 
+after_success: coveralls
+
 addons:
   apt:
     packages:
