@@ -23,7 +23,7 @@ class HttpHook(BaseHook):
         barterdude.add_endpoint(
             routes=[path],
             methods=["GET"],
-            hook=self
+            hook=self.__call__
         )
 
     async def __call__(self, req: web.Request = None):

@@ -15,7 +15,7 @@ class TestHttpHook(TestCase):
         self.app.add_endpoint.assert_called_with(
             routes=["/my_little_route"],
             methods=["GET"],
-            hook=hook
+            hook=hook.__call__
         )
 
     async def test_should_fail_when_calling_unimplemented_methods(self):

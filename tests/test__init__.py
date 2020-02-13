@@ -13,7 +13,7 @@ class TestBarterDude(TestCase):
         self.monitor.dispatch_on_fail = CoroutineMock()
         self.callback = CoroutineMock()
         self.messages = [Mock() for _ in range(10)]
-        self.calls = [call(message.body) for message in self.messages]
+        self.calls = [call(message) for message in self.messages]
 
         self.AMQPConnection = AMQPConnection
         self.connection = self.AMQPConnection.return_value
@@ -95,7 +95,7 @@ class TestBarterDude(TestCase):
         await wrapper(self.messages)
         self.monitor.dispatch_before_consume.assert_has_calls(
             self.calls, any_order=True)
-        error_calls = [call(message.body, error) for message in self.messages]
+        error_calls = [call(message, error) for message in self.messages]
         self.monitor.dispatch_on_fail.assert_has_calls(
             error_calls, any_order=True)
         self.monitor.dispatch_on_success.assert_not_called()
