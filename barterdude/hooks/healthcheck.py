@@ -1,7 +1,6 @@
 from barterdude import BarterDude
 from barterdude.hooks import HttpHook
 from aiohttp import web
-from typing import Optional
 from time import time
 from collections import deque
 from bisect import bisect_left
