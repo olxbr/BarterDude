@@ -18,13 +18,6 @@ if you want Prometheus integration
 pip install barterdude[prometheus] # or pip install barterdude[all]
 ```
 
-## Test
-
-```sh
-make rabbitmq
-make all-tests
-```
-
 ## Usage
 
 Build your consumer with this complete example:
@@ -139,6 +132,21 @@ class MyCounterHttpHook(HttpHook):
 
 
 ```
+
+### Testing
+
+To test async consumers we recommend `asynctest` lib
+
+```python
+from asynctest import TestCase
+
+
+class TestMain(TestCase):
+    def test_should_pass(self):
+        self.assertTrue(True)
+```
+
+We hope you enjoy! :wink:
 
 ## Contribute
 
