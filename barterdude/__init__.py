@@ -40,15 +40,14 @@ class BarterDude():
     ):
         def decorator(f):
             async def process_message(message):
-                body = message.body
-                await monitor.dispatch_before_consume(body)
+                await monitor.dispatch_before_consume(message)
                 try:
-                    await f(body)
+                    await f(message)
                 except Exception as error:
-                    await monitor.dispatch_on_fail(body, error)
+                    await monitor.dispatch_on_fail(message, error)
                     message.reject()
                 else:
-                    await monitor.dispatch_on_success(body)
+                    await monitor.dispatch_on_success(message)
 
             @self.__app.route(
                 queues,

@@ -1,6 +1,6 @@
 import asyncio
 
-from asynctest import TestCase, CoroutineMock
+from asynctest import TestCase
 from barterdude import BarterDude
 from asyncworker.connections import AMQPConnection
 from random import choices
@@ -56,17 +56,30 @@ class RabbitMQConsumerTest(TestCase):
         )
         await self.queue_manager.connection.close()
 
-    async def test_process_ons_successful_message(self):
-        handler = CoroutineMock()
-        self.app.consume_amqp([self.input_queue])(handler)
+    async def send_all_messages(self):
+        futures = []
+        for message in self.messages:
+            futures.append(self.queue_manager.put(
+                routing_key=self.input_queue,
+                data=message
+            ))
+        await asyncio.gather(*futures)
+
+    async def test_process_messages_successfully(self):
+        received_messages = set()
+
+        @self.app.consume_amqp([self.input_queue])
+        async def handler(message):
+            nonlocal received_messages
+            received_messages.add(message.body["key"])
 
         await self.app.startup()
-        await self.queue_manager.put(
-            routing_key=self.input_queue,
-            data=self.messages[0]
-        )
+        await self.send_all_messages()
         await asyncio.sleep(1)
-        handler.assert_called_once_with(self.messages[0])
+
+        for message in self.messages:
+            self.assertTrue(message["key"] in received_messages)
+
         await self.app.shutdown()
 
     async def test_process_one_message_and_publish(self):
@@ -77,8 +90,12 @@ class RabbitMQConsumerTest(TestCase):
                 self.messages[1]
             )
 
-        handler = CoroutineMock()
-        self.app.consume_amqp([self.output_queue])(handler)
+        received_message = None
+
+        @self.app.consume_amqp([self.output_queue])
+        async def handler(message):
+            nonlocal received_message
+            received_message = message.body
 
         await self.app.startup()
         await self.queue_manager.put(
@@ -86,5 +103,81 @@ class RabbitMQConsumerTest(TestCase):
             data=self.messages[0]
         )
         await asyncio.sleep(1)
-        handler.assert_called_once_with(self.messages[1])
+        self.assertEquals(received_message, self.messages[1])
         await self.app.shutdown()
+
+    async def test_process_message_reject_with_requeue(self):
+        handler_called = 0
+
+        @self.app.consume_amqp([self.input_queue])
+        async def handler(messages):
+            nonlocal handler_called
+            handler_called = handler_called + 1
+            if handler_called < 2:
+                raise Exception()
+
+        await self.app.startup()
+        await self.queue_manager.put(
+            routing_key=self.input_queue,
+            data=self.messages[0]
+        )
+        await asyncio.sleep(1)
+        self.assertEquals(handler_called, 2)
+        await self.app.shutdown()
+
+    async def test_process_message_reject_without_requeue(self):
+        handler_called = 0
+
+        @self.app.consume_amqp([self.input_queue])
+        async def handler(message):
+            nonlocal handler_called
+            handler_called = handler_called + 1
+            message.reject(requeue=False)
+
+        await self.app.startup()
+        await self.queue_manager.put(
+            routing_key=self.input_queue,
+            data=self.messages[0]
+        )
+        await asyncio.sleep(1)
+        self.assertEquals(handler_called, 1)
+        await self.app.shutdown()
+
+    async def test_process_messages_and_requeue_only_one(self):
+        first_read = set()
+        second_read = set()
+
+        @self.app.consume_amqp(
+            [self.input_queue],
+            bulk_size=len(self.messages),
+            bulk_flush_interval=1
+        )
+        async def handler(message):
+            nonlocal first_read
+            nonlocal second_read
+            value = message.body["key"]
+            if value not in first_read:
+                print('adding ' + value)
+                first_read.add(value)
+                if message.body == self.messages[0]:
+                    # process only messages[0] again
+                    print('deu treta')
+                    raise Exception()
+            else:
+                second_read.add(value)
+
+        await self.app.startup()
+        await self.send_all_messages()
+
+        # flush_interval is not working as expected, so we have to wait at
+        # minimum 60 seconds for async-worker to handle prefetched messages
+        await asyncio.sleep(62)
+
+        for message in self.messages:
+            self.assertTrue(message["key"] in first_read)
+
+        print(second_read)
+        self.assertSetEqual(second_read, {self.messages[0]["key"]})
+
+        await self.app.shutdown()
+
