@@ -8,7 +8,7 @@ python:
 # command to install dependencies
 install:
   - make setup
-  - bundle install # for coveralls
+  - pip install python-coveralls  # for coveralls
 # command to run tests
 script:
   - make all-tests
