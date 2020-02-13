@@ -1,7 +1,11 @@
+import aiohttp
 import asyncio
 
 from asynctest import TestCase
 from barterdude import BarterDude
+from barterdude.monitor import Monitor
+from barterdude.hooks.healthcheck import Healthcheck
+from barterdude.hooks.metrics.prometheus import Prometheus
 from asyncworker.connections import AMQPConnection
 from random import choices
 from string import ascii_uppercase
@@ -157,11 +161,9 @@ class RabbitMQConsumerTest(TestCase):
             nonlocal second_read
             value = message.body["key"]
             if value not in first_read:
-                print('adding ' + value)
                 first_read.add(value)
                 if message.body == self.messages[0]:
                     # process only messages[0] again
-                    print('deu treta')
                     raise Exception()
             else:
                 second_read.add(value)
@@ -176,8 +178,61 @@ class RabbitMQConsumerTest(TestCase):
         for message in self.messages:
             self.assertTrue(message["key"] in first_read)
 
-        print(second_read)
         self.assertSetEqual(second_read, {self.messages[0]["key"]})
 
         await self.app.shutdown()
 
+    async def test_obtains_healthcheck(self):
+        monitor = Monitor(Healthcheck(self.app))
+
+        @self.app.consume_amqp([self.input_queue], monitor)
+        async def handler(message):
+            pass
+
+        await self.app.startup()
+        await self.queue_manager.put(
+            routing_key=self.input_queue,
+            data=self.messages[0]
+        )
+        await asyncio.sleep(1)
+
+        async with aiohttp.ClientSession() as session:
+            timeout = aiohttp.ClientTimeout(total=1)
+            url = 'http://localhost:8080/healthcheck'
+            async with session.get(url, timeout=timeout) as response:
+                status_code = response.status
+                text = await response.text()
+
+        self.assertEquals(status_code, 200)
+        self.assertEquals(text, "Bater like a pro! Success rate: 1.0")
+
+        await self.app.shutdown()
+
+    async def test_obtains_prometheus_metrics(self):
+        labels = {"app_name": "barterdude_consumer"}
+        monitor = Monitor(Prometheus(self.app, labels))
+
+        @self.app.consume_amqp([self.input_queue], monitor)
+        async def handler(message):
+            pass
+
+        await self.app.startup()
+        await self.queue_manager.put(
+            routing_key=self.input_queue,
+            data=self.messages[0]
+        )
+        await asyncio.sleep(1)
+
+        async with aiohttp.ClientSession() as session:
+            timeout = aiohttp.ClientTimeout(total=1)
+            url = 'http://localhost:8080/metrics'
+            async with session.get(url, timeout=timeout) as response:
+                status_code = response.status
+                text = await response.text()
+
+        self.assertEquals(status_code, 200)
+        self.assertNotEquals(-1, text.find(
+            'barterdude_received_number_before_consume_messages_total'
+            '{app_name="barterdude_consumer"} 1.0'))
+
+        await self.app.shutdown()
