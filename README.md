@@ -32,7 +32,7 @@ from barterdude.hooks.logging import Logging
 from barterdude.hooks.metrics.prometheus import Prometheus
 from asyncworker.rabbitmq.message import RabbitMQMessage
 
-from my_project import MyHook # you can build your own hooks
+# from my_project import MyHook (you can build your own hooks)
 
 
 # configure RabbitMQ
@@ -52,6 +52,7 @@ healthcheck = Healthcheck(barterdude) # automatic and customizable healthcheck
 
 monitor = Monitor(
     healthcheck,
+    # MyHook(barterdude, "/path") # (will make localhost:8080/path url)
     Prometheus(barterdude, labels), # automatic and customizable Prometheus integration
     Logging() # automatic and customizable logging
 )
@@ -72,9 +73,6 @@ async def your_consumer(msg: RabbitMQMessage): # you receive only one message an
     
     # if everything is fine, than message automatically is accepted 
 
-# register endpoint with a hook if you want
-barterdude.add_endpoint(["http_endoint1", "http_endpoint2"], MyHook())
-
 
 barterdude.run() # you will start consume and start a server on http://localhost:8080
 # Change host and port with ASYNCWORKER_HTTP_HOST and ASYNCWORKER_HTTP_PORT env vars
@@ -91,7 +89,7 @@ These hooks are called when message retreive, have success and fail.
 from barterdude.hooks import BaseHook
 from asyncworker.rabbitmq.message import RabbitMQMessage
 
-class MyCounterHook(HttpHook):
+class MyCounterHook(BaseHook):
     _consume = _fail = _success = 0
 
     async def on_success(self, message: RabbitMQMessage):
@@ -110,6 +108,7 @@ class MyCounterHook(HttpHook):
 These hooks can do everything simple hook does, but responding to a route.
 
 ```python
+from aiohttp import web
 from barterdude.hooks import HttpHook
 from asyncworker.rabbitmq.message import RabbitMQMessage
 

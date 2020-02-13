@@ -102,7 +102,7 @@ class Prometheus(HttpHook):
     async def on_fail(self, message: dict, error: Exception):
         await self._on_complete(message, self.D_FAIL, error)
 
-    async def __call__(self, req: web.Request = None):
+    async def __call__(self, req: web.Request):
         return web.Response(
             content_type=CONTENT_TYPE_LATEST.split(";")[0],
             charset=CONTENT_TYPE_LATEST.split("=")[-1],

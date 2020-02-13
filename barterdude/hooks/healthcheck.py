@@ -1,6 +1,7 @@
 from barterdude import BarterDude
 from barterdude.hooks import HttpHook
 from aiohttp import web
+from typing import Optional
 from time import time
 from collections import deque
 from bisect import bisect_left
@@ -40,7 +41,7 @@ class Healthcheck(HttpHook):
     async def on_fail(self, message, error):
         self.__fail.append(time())
 
-    async def __call__(self, req: web.Request = None):
+    async def __call__(self, req: web.Request):
         if self.__force_fail:
             return web.Response(
                 body="Healthcheck fail called manually",

@@ -27,7 +27,7 @@ class TestPrometheus(TestCase):
     @patch("barterdude.hooks.metrics.prometheus.generate_latest")
     async def test_should_call_response_from_prometheus(self, mock):
         mock.return_value = "test prometheus"
-        response = await self.prometheus()
+        response = await self.prometheus(Mock())
         mock.assert_called_once()
         mock.assert_called_with(self.registry)
         self.assertEqual(response.status, 200)

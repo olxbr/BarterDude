@@ -26,7 +26,7 @@ class HttpHook(BaseHook):
             hook=self.__call__
         )
 
-    async def __call__(self, req: web.Request = None):
+    async def __call__(self, req: web.Request):
         raise NotImplementedError
 
     async def on_success(self, message: RabbitMQMessage):

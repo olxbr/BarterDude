@@ -24,7 +24,7 @@ class TestHttpHook(TestCase):
             "/my_little_route"
         )
         with self.assertRaises(NotImplementedError):
-            await hook()
+            await hook(Mock())
         with self.assertRaises(NotImplementedError):
             await hook.before_consume(None)
         with self.assertRaises(NotImplementedError):
