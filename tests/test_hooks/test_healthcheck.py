@@ -15,6 +15,9 @@ class TestHealthcheck(TestCase):
             self.health_window
         )
 
+    async def test_should_call_before_consume(self):
+        await self.healthcheck.before_consume(None)
+
     async def test_should_pass_healthcheck_when_no_messages(self):
         response = await self.healthcheck()
         self.assertEqual(response.status, 200)

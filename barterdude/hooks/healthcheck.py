@@ -31,6 +31,9 @@ class Healthcheck(HttpHook):
     def force_fail(self):
         self.__force_fail = True
 
+    async def before_consume(self, message):
+        pass
+
     async def on_success(self, message):
         self.__success.append(time())
 
