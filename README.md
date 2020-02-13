@@ -56,7 +56,7 @@ monitor = Monitor(
 
 
 @barterdude.consume_amqp(["queue1", "queue2"], monitor)
-async def your_consumer(msg: RabbitMQMessage):
+async def your_consumer(msg: RabbitMQMessage): # you receive only one message and we parallelize processing for you
     await barterdude.publish_amqp(
         exchange="my_exchange",
         data=msg.body
