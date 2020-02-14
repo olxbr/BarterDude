@@ -4,6 +4,15 @@ from asynctest import TestCase, MagicMock, Mock, patch
 from barterdude.hooks.metrics.prometheus import Prometheus
 from barterdude.hooks.metrics.prometheus.definition import Definition
 
+from prometheus_client import (
+    Counter,
+    Gauge,
+    Summary,
+    Histogram,
+    Info,
+    Enum
+)
+
 
 class TestPrometheus(TestCase):
     def setUp(self):
@@ -125,4 +134,46 @@ class TestPrometheus(TestCase):
         self.assertDictEqual(
             self.prometheus._msg_start,
             {}
+        )
+
+    def test_should_call_counter(self):
+        self.assertTrue(
+            isinstance(self.prometheus.counter(
+                name="test", documentation="doc"
+            ), Counter)
+        )
+
+    def test_should_call_gauge(self):
+        self.assertTrue(
+            isinstance(self.prometheus.gauge(
+                name="test", documentation="doc"
+            ), Gauge)
+        )
+
+    def test_should_call_summary(self):
+        self.assertTrue(
+            isinstance(self.prometheus.summary(
+                name="test", documentation="doc"
+            ), Summary)
+        )
+
+    def test_should_call_histogram(self):
+        self.assertTrue(
+            isinstance(self.prometheus.histogram(
+                name="test", documentation="doc"
+            ), Histogram)
+        )
+
+    def test_should_call_info(self):
+        self.assertTrue(
+            isinstance(self.prometheus.info(
+                name="test", documentation="doc"
+            ), Info)
+        )
+
+    def test_should_call_enum(self):
+        self.assertTrue(
+            isinstance(self.prometheus.enum(
+                name="test", documentation="doc", states=Mock()
+            ), Enum)
         )

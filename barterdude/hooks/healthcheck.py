@@ -1,5 +1,6 @@
 from barterdude import BarterDude
 from barterdude.hooks import HttpHook
+from asyncworker.rabbitmq.message import RabbitMQMessage
 from aiohttp import web
 from time import time
 from collections import deque
@@ -31,13 +32,13 @@ class Healthcheck(HttpHook):
     def force_fail(self):
         self.__force_fail = True
 
-    async def before_consume(self, message):
+    async def before_consume(self, message: RabbitMQMessage):
         pass
 
-    async def on_success(self, message):
+    async def on_success(self, message: RabbitMQMessage):
         self.__success.append(time())
 
-    async def on_fail(self, message, error):
+    async def on_fail(self, message: RabbitMQMessage, error: Exception):
         self.__fail.append(time())
 
     async def __call__(self, req: web.Request):

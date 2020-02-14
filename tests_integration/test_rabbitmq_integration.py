@@ -154,7 +154,7 @@ class RabbitMQConsumerTest(TestCase):
         @self.app.consume_amqp(
             [self.input_queue],
             bulk_size=len(self.messages),
-            bulk_flush_interval=1
+            bulk_flush_interval=0.1
         )
         async def handler(message):
             nonlocal first_read
@@ -171,9 +171,7 @@ class RabbitMQConsumerTest(TestCase):
         await self.app.startup()
         await self.send_all_messages()
 
-        # flush_interval is not working as expected, so we have to wait at
-        # minimum 60 seconds for async-worker to handle prefetched messages
-        await asyncio.sleep(62)
+        await asyncio.sleep(1)
 
         for message in self.messages:
             self.assertTrue(message["key"] in first_read)

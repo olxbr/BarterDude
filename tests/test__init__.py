@@ -113,7 +113,8 @@ class TestBarterDude(TestCase):
             exchange='exchange',
             data=data,
             vhost="vhost",
-            routing_key="routing_key"
+            routing_key="routing_key",
+            properties=None
         )
 
     async def test_should_call_startup_and_shutdown(self):

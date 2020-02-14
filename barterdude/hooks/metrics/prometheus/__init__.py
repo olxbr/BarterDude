@@ -1,18 +1,24 @@
 import time
 from aiohttp import web
 from typing import Optional
-
+from asyncworker.rabbitmq.message import RabbitMQMessage
 from barterdude import BarterDude
 from barterdude.hooks import HttpHook
 from barterdude.hooks.metrics.prometheus.definition import Definition
-
+from barterdude.hooks.metrics.prometheus.partial_metric import partial_metric
 try:
     from prometheus_client import (
         CollectorRegistry,
         generate_latest,
-        CONTENT_TYPE_LATEST
+        CONTENT_TYPE_LATEST,
+        Counter,
+        Gauge,
+        Summary,
+        Histogram,
+        Info,
+        Enum
     )
-except ImportError:
+except ImportError:  # pragma: no cover
     raise ImportError("""
     Please install extra dependency with:
         `pip install barterdude[prometheus]`
@@ -74,7 +80,31 @@ class Prometheus(HttpHook):
             registry=self.__registry
         )
 
-    async def before_consume(self, message: dict):
+    @property
+    def counter(self):
+        return partial_metric(Counter, self.__registry)
+
+    @property
+    def gauge(self):
+        return partial_metric(Gauge, self.__registry)
+
+    @property
+    def summary(self):
+        return partial_metric(Summary, self.__registry)
+
+    @property
+    def histogram(self):
+        return partial_metric(Histogram, self.__registry)
+
+    @property
+    def info(self):
+        return partial_metric(Info, self.__registry)
+
+    @property
+    def enum(self):
+        return partial_metric(Enum, self.__registry)
+
+    async def before_consume(self, message: RabbitMQMessage):
         hash_message = id(message)
         self._d.metrics[self.D_BEFORE_CONSUME].labels(
             **self.__labels
@@ -82,7 +112,7 @@ class Prometheus(HttpHook):
         self._msg_start[hash_message] = time.time()
 
     async def _on_complete(self,
-                           message: dict,
+                           message: RabbitMQMessage,
                            state: str,
                            error: Optional[Exception] = None):
 
@@ -96,10 +126,10 @@ class Prometheus(HttpHook):
             final_time - self._msg_start.pop(hash_message)
         )
 
-    async def on_success(self, message: dict):
+    async def on_success(self, message: RabbitMQMessage):
         await self._on_complete(message, self.D_SUCCESS)
 
-    async def on_fail(self, message: dict, error: Exception):
+    async def on_fail(self, message: RabbitMQMessage, error: Exception):
         await self._on_complete(message, self.D_FAIL, error)
 
     async def __call__(self, req: web.Request):
