@@ -1,14 +1,8 @@
-try:
-    from prometheus_client import (
-        CollectorRegistry,
-        Counter,
-        Histogram
-    )
-except ImportError:
-    raise ImportError("""
-    Please install extra dependency with:
-        `pip install barterdude[prometheus]`
-    """)
+from prometheus_client import (
+    CollectorRegistry,
+    Counter,
+    Histogram
+)
 from typing import Iterable
 from barterdude.hooks.metrics.prometheus.metrics import Metrics
 

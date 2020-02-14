@@ -1,10 +1,4 @@
-try:
-    from prometheus_client.metrics import MetricWrapperBase
-except ImportError:
-    raise ImportError("""
-    Please install extra dependency with:
-        `pip install barterdude[prometheus]`
-    """)
+from prometheus_client.metrics import MetricWrapperBase
 
 
 class Metrics(dict):

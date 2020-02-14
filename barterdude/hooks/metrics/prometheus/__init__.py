@@ -18,7 +18,7 @@ try:
         Info,
         Enum
     )
-except ImportError:
+except ImportError:  # pragma: no cover
     raise ImportError("""
     Please install extra dependency with:
         `pip install barterdude[prometheus]`

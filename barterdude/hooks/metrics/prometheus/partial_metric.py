@@ -1,15 +1,8 @@
 import functools
-
-try:
-    from prometheus_client import (
-        CollectorRegistry,
-    )
-    from prometheus_client.metrics import MetricWrapperBase
-except ImportError:
-    raise ImportError("""
-    Please install extra dependency with:
-        `pip install barterdude[prometheus]`
-    """)
+from prometheus_client import (
+    CollectorRegistry,
+)
+from prometheus_client.metrics import MetricWrapperBase
 
 
 def partial_metric(cls: MetricWrapperBase, registry: CollectorRegistry):
