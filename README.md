@@ -49,11 +49,12 @@ labels = dict(
     team_name="my_team"
 )
 healthcheck = Healthcheck(barterdude) # automatic and customizable healthcheck
+prometheus = Prometheus(barterdude, labels), # automatic and customizable Prometheus integration
 
 monitor = Monitor(
     healthcheck,
+    prometheus,
     # MyHook(barterdude, "/path") # (will make localhost:8080/path url)
-    Prometheus(barterdude, labels), # automatic and customizable Prometheus integration
     Logging() # automatic and customizable logging
 )
 
@@ -65,6 +66,7 @@ async def your_consumer(msg: RabbitMQMessage): # you receive only one message an
         data=msg.body
     )
     if msg.body == "fail":
+        prometheus.count(name="fail", description="fail again") # you can use prometheus metrics
         healthcheck.force_fail() # you can use your hooks inside consumer too
         msg.reject(requeue=True) # You can force to reject a message, exactly equal https://b2wdigital.github.io/async-worker/src/asyncworker/asyncworker.rabbitmq.html#asyncworker.rabbitmq.message.RabbitMQMessage
 
