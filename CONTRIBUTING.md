@@ -144,8 +144,3 @@ from the main (upstream) repository:
 ## Reviewing Pull Requests
 
 Except for critical, urgent or very small fixes, we try to leave pull requests open for most of the day or overnight if something comes in late in the day, so that multiple people have the chance to review/comment.  Anyone who reviews a pull request should leave a note to let others know that someone has looked at it.  For larger commits, we like to have a +1 from someone else on the core team and/or from other contributor(s).  Please note if you reviewed the code or tested locally -- a +1 by itself will typically be interpreted as your thinking its a good idea, but not having reviewed in detail.
-
-If the PR contains a database migration, please tag it with the `help wanted`. A
-contributor for the project will work with you to get this tested in a staging
-environment along with getting the migration running on the database. These PRs
-will also be code reviewed at this time as well.
