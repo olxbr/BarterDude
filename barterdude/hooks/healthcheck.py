@@ -40,7 +40,7 @@ class Healthcheck(HttpHook):
     async def on_fail(self, message, error):
         self.__fail.append(time())
 
-    async def __call__(self, *args, **kwargs):
+    async def __call__(self, req: web.Request):
         if self.__force_fail:
             return web.Response(
                 body="Healthcheck fail called manually",

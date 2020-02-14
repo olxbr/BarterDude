@@ -7,6 +7,7 @@ python:
 # command to install dependencies
 install:
   - make setup
+  - pip install python-coveralls  # for coveralls
 # command to run tests
 script:
   - make all-tests
@@ -23,6 +24,8 @@ deploy:
     branch: master
     tags: true
     condition: $TRAVIS_PYTHON_VERSION = "3.6"
+
+after_success: coveralls
 
 addons:
   apt:
