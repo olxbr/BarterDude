@@ -12,14 +12,24 @@ Please note we have a code of conduct, please follow it in all your interactions
 ### Install
 
 ```bash
-pip install -e .
+make setup
 ```
 
 ### Tests
 
+For unit tests:
+
 ```bash
 make test
 ```
+
+For integration tests:
+
+```bash
+make rabbitmq
+make integration
+```
+
 
 ### Publish to Pypi
 
@@ -86,8 +96,7 @@ Before you submit your pull request consider the following guidelines:
 * Build your changes locally to ensure all the tests and security checks pass
 
     ```shell
-    make test
-    make check-sec
+    make all-tests
     ```
 
 * Push your branch to GitHub:
