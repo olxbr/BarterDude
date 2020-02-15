@@ -5,18 +5,12 @@ from asyncworker.rabbitmq.message import RabbitMQMessage
 from barterdude import BarterDude
 from barterdude.hooks import HttpHook
 from barterdude.hooks.metrics.prometheus.definition import Definition
-from barterdude.hooks.metrics.prometheus.partial_metric import partial_metric
+from barterdude.hooks.metrics.prometheus.metrics import Metric
 try:
     from prometheus_client import (
         CollectorRegistry,
         generate_latest,
         CONTENT_TYPE_LATEST,
-        Counter,
-        Gauge,
-        Summary,
-        Histogram,
-        Info,
-        Enum
     )
 except ImportError:  # pragma: no cover
     raise ImportError("""
@@ -41,8 +35,7 @@ class Prometheus(HttpHook):
         labels: dict,
         path: str = "/metrics",
         registry: CollectorRegistry = CollectorRegistry(),
-        definition: Definition = Definition()
-    ):
+        definition: Definition = Definition()):
         self.__registry = registry
         self.__labels = labels
         self._d = definition
@@ -80,29 +73,26 @@ class Prometheus(HttpHook):
             registry=self.__registry
         )
 
-    @property
-    def counter(self):
-        return partial_metric(Counter, self.__registry)
-
-    @property
-    def gauge(self):
-        return partial_metric(Gauge, self.__registry)
-
-    @property
-    def summary(self):
-        return partial_metric(Summary, self.__registry)
-
-    @property
-    def histogram(self):
-        return partial_metric(Histogram, self.__registry)
-
-    @property
-    def info(self):
-        return partial_metric(Info, self.__registry)
-
-    @property
-    def enum(self):
-        return partial_metric(Enum, self.__registry)
+    def metric(self, 
+        name,
+        documentation,
+        labelnames=list(self.__labels.keys()),
+        namespace=self.NAMESPACE,
+        subsystem='',
+        unit='',
+        labelvalues=list(self.__labels.values()),
+        **kwargs):
+        return Metric(
+            name=name,
+            documentation=documentation,
+            labelnames=labelnames,
+            namespace=namespace,
+            subsystem=subsystem,
+            unit=unit,
+            labelvalues=labelvalues,
+            registry=self.__registry,
+            **kwargs
+        )
 
     async def before_consume(self, message: RabbitMQMessage):
         hash_message = id(message)
