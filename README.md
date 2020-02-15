@@ -2,7 +2,7 @@
 [![Build Status](https://travis-ci.com/olxbr/BarterDude.svg?branch=master)](https://travis-ci.com/olxbr/BarterDude)
 [![Coverage Status](https://coveralls.io/repos/github/olxbr/BarterDude/badge.svg?branch=master)](https://coveralls.io/github/olxbr/BarterDude?branch=master)
 
-Message exchange engine to build pipelines using brokers like RabbitMQ. This project is build on top of [async-worker](https://github.com/b2wdigital/async-worker).
+Message exchange engine to build pipelines using brokers like RabbitMQ. This project is build on top of the great [async-worker](https://github.com/b2wdigital/async-worker).
 
 ![barter](https://github.com/olxbr/BarterDude/blob/master/barterdude.jpg)
 
