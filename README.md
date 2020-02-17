@@ -58,7 +58,7 @@ monitor = Monitor(
     Logging() # automatic and customizable logging
 )
 
-my_metric = prometheus.metrics.counter(name="fail", description="fail again")
+my_metric = prometheus.metrics.counter(name="fail", description="fail again")  # It's the same as https://github.com/prometheus/client_python
 
 
 @barterdude.consume_amqp(
