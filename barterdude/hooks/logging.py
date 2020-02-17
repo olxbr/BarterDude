@@ -1,12 +1,15 @@
+import logging
 from barterdude.hooks import BaseHook
 from asyncworker.rabbitmq.message import RabbitMQMessage
-import logging
+from aiologger.loggers.json import JsonLogger
 
 
 class Logging(BaseHook):
     def __init__(
             self,
-            logger: logging.Logger = logging.getLogger("barterdude")):
+            logger: logging.Logger = JsonLogger.with_default_handlers(
+                name="barterdude",
+                flatten=True)):
         self.__logger = logger
 
     async def before_consume(self, message: RabbitMQMessage):
