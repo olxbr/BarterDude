@@ -49,7 +49,7 @@ labels = dict(
     team_name="my_team"
 )
 healthcheck = Healthcheck(barterdude) # automatic and customizable healthcheck
-prometheus = Prometheus(barterdude, labels), # automatic and customizable Prometheus integration
+prometheus = Prometheus(barterdude, labels) # automatic and customizable Prometheus integration
 
 monitor = Monitor(
     healthcheck,
