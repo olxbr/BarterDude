@@ -38,7 +38,6 @@ class BarterDude():
         monitor: Monitor = Monitor(),
         coroutines: int = 10,
         bulk_flush_interval: float = 60.0,
-        max_concurrency: int = 1,
         requeue_on_fail: bool = True
     ):
         def decorator(f):
@@ -57,8 +56,7 @@ class BarterDude():
                 type=RouteTypes.AMQP_RABBITMQ,
                 options={
                     Options.BULK_SIZE: coroutines,
-                    Options.BULK_FLUSH_INTERVAL: bulk_flush_interval,
-                    Options.MAX_CONCURRENCY: max_concurrency
+                    Options.BULK_FLUSH_INTERVAL: bulk_flush_interval
                 }
             )
             async def wrapper(messages: RabbitMQMessage):

@@ -66,7 +66,6 @@ my_metric = prometheus.metrics.counter(name="fail", description="fail again")  #
     monitor,
     n_coroutines = 10,  # number of coroutines spawned to consume messages (1 per message)
     bulk_flush_interval = 60.0,  #  max waiting time for messages to start process n_coroutines
-    max_concurrency = 1,  # number of workers
     requeue_on_fail = True  # should retry or not the message
 )
 async def your_consumer(msg: RabbitMQMessage): # you receive only one message and we parallelize processing for you

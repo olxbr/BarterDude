@@ -44,8 +44,7 @@ class TestBarterDude(TestCase):
             type=RouteTypes.AMQP_RABBITMQ,
             options={
                 Options.BULK_SIZE: 10,
-                Options.BULK_FLUSH_INTERVAL: 60,
-                Options.MAX_CONCURRENCY: 1
+                Options.BULK_FLUSH_INTERVAL: 60
             }
         )
 
