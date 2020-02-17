@@ -58,6 +58,8 @@ monitor = Monitor(
     Logging() # automatic and customizable logging
 )
 
+my_metric = prometheus.metrics.counter(name="fail", description="fail again")
+
 
 @barterdude.consume_amqp(
     ["queue1", "queue2"],
@@ -73,7 +75,7 @@ async def your_consumer(msg: RabbitMQMessage): # you receive only one message an
         data=msg.body
     )
     if msg.body == "fail":
-        prometheus.count(name="fail", description="fail again") # you can use prometheus metrics
+        my_metric.inc() # you can use prometheus metrics
         healthcheck.force_fail() # you can use your hooks inside consumer too
         msg.reject(requeue=False) # You can force to reject a message, exactly equal https://b2wdigital.github.io/async-worker/src/asyncworker/asyncworker.rabbitmq.html#asyncworker.rabbitmq.message.RabbitMQMessage
 
