@@ -64,7 +64,7 @@ my_metric = prometheus.metrics.counter(name="fail", description="fail again")  #
 @barterdude.consume_amqp(
     ["queue1", "queue2"],
     monitor,
-    n_coroutines = 10,  # number of coroutines spawned to consume messages (1 per message)
+    coroutines = 10,  # number of coroutines spawned to consume messages (1 per message)
     bulk_flush_interval = 60.0,  #  max waiting time for messages to start process n_coroutines
     requeue_on_fail = True  # should retry or not the message
 )
