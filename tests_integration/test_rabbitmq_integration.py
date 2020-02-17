@@ -72,7 +72,7 @@ class RabbitMQConsumerTest(TestCase):
     async def test_process_messages_successfully(self):
         received_messages = set()
 
-        @self.app.consume_amqp([self.input_queue])
+        @self.app.consume_amqp([self.input_queue], coroutines=1)
         async def handler(message):
             nonlocal received_messages
             received_messages.add(message.body["key"])
@@ -87,7 +87,7 @@ class RabbitMQConsumerTest(TestCase):
         await self.app.shutdown()
 
     async def test_process_one_message_and_publish(self):
-        @self.app.consume_amqp([self.input_queue])
+        @self.app.consume_amqp([self.input_queue], coroutines=1)
         async def forward(message):
             await self.app.publish_amqp(
                 self.output_exchange,
@@ -96,7 +96,7 @@ class RabbitMQConsumerTest(TestCase):
 
         received_message = None
 
-        @self.app.consume_amqp([self.output_queue])
+        @self.app.consume_amqp([self.output_queue], coroutines=1)
         async def handler(message):
             nonlocal received_message
             received_message = message.body
@@ -110,10 +110,10 @@ class RabbitMQConsumerTest(TestCase):
         self.assertEquals(received_message, self.messages[1])
         await self.app.shutdown()
 
-    async def test_process_message_reject_with_requeue(self):
+    async def test_process_message_requeue_with_requeue(self):
         handler_called = 0
 
-        @self.app.consume_amqp([self.input_queue])
+        @self.app.consume_amqp([self.input_queue], coroutines=1)
         async def handler(messages):
             nonlocal handler_called
             handler_called = handler_called + 1
@@ -127,6 +127,25 @@ class RabbitMQConsumerTest(TestCase):
         )
         await asyncio.sleep(1)
         self.assertEquals(handler_called, 2)
+        await self.app.shutdown()
+
+    async def test_process_message_reject_with_requeue(self):
+        handler_called = 0
+
+        @self.app.consume_amqp([self.input_queue], requeue_on_fail=False)
+        async def handler(messages):
+            nonlocal handler_called
+            handler_called = handler_called + 1
+            if handler_called < 2:
+                raise Exception()
+
+        await self.app.startup()
+        await self.queue_manager.put(
+            routing_key=self.input_queue,
+            data=self.messages[0]
+        )
+        await asyncio.sleep(1)
+        self.assertEquals(handler_called, 1)
         await self.app.shutdown()
 
     async def test_process_message_reject_without_requeue(self):
@@ -153,7 +172,7 @@ class RabbitMQConsumerTest(TestCase):
 
         @self.app.consume_amqp(
             [self.input_queue],
-            bulk_size=len(self.messages),
+            coroutines=len(self.messages),
             bulk_flush_interval=0.1
         )
         async def handler(message):

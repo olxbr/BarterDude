@@ -1,5 +1,6 @@
 from asyncio import gather
-from asyncworker import App, Options, RouteTypes
+from asyncworker import App, RouteTypes
+from asyncworker.options import Options
 from asyncworker.connections import AMQPConnection
 from asyncworker.rabbitmq.message import RabbitMQMessage
 from typing import Iterable
@@ -35,9 +36,9 @@ class BarterDude():
         self,
         queues: Iterable[str],
         monitor: Monitor = Monitor(),
-        bulk_size: int = 1,
+        coroutines: int = 10,
         bulk_flush_interval: float = 60.0,
-        **kwargs,
+        requeue_on_fail: bool = True
     ):
         def decorator(f):
             async def process_message(message: RabbitMQMessage):
@@ -46,7 +47,7 @@ class BarterDude():
                     await f(message)
                 except Exception as error:
                     await monitor.dispatch_on_fail(message, error)
-                    message.reject()
+                    message.reject(requeue_on_fail)
                 else:
                     await monitor.dispatch_on_success(message)
 
@@ -54,10 +55,9 @@ class BarterDude():
                 queues,
                 type=RouteTypes.AMQP_RABBITMQ,
                 options={
-                    Options.BULK_SIZE: bulk_size,
+                    Options.BULK_SIZE: coroutines,
                     Options.BULK_FLUSH_INTERVAL: bulk_flush_interval
-                },
-                **kwargs
+                }
             )
             async def wrapper(messages: RabbitMQMessage):
                 await gather(*map(process_message, messages))
