@@ -37,19 +37,16 @@ class TestBarterDude(TestCase):
 
     def test_should_call_route_when_created(self):
         self.barterdude.consume_amqp(
-            ["queue"],
-            vhost="vhost",
-            routing_key="routing_key"
+            ["queue"]
         )(CoroutineMock())
         self.app.route.assert_called_once_with(
             ["queue"],
             type=RouteTypes.AMQP_RABBITMQ,
             options={
-                Options.BULK_SIZE: 1,
-                Options.BULK_FLUSH_INTERVAL: 60
-            },
-            vhost="vhost",
-            routing_key="routing_key"
+                Options.BULK_SIZE: 10,
+                Options.BULK_FLUSH_INTERVAL: 60,
+                Options.MAX_CONCURRENCY: 1
+            }
         )
 
     def test_should_call_route_when_adding_endpoint(self):

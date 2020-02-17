@@ -59,7 +59,14 @@ monitor = Monitor(
 )
 
 
-@barterdude.consume_amqp(["queue1", "queue2"], monitor)
+@barterdude.consume_amqp(
+    ["queue1", "queue2"],
+    monitor,
+    n_coroutines = 10,  # number of coroutines spawned to consume messages (1 per message)
+    bulk_flush_interval = 60.0,  #  max waiting time for messages to start process n_coroutines
+    max_concurrency = 1,  # number of workers
+    requeue_on_fail = True  # should retry or not the message
+)
 async def your_consumer(msg: RabbitMQMessage): # you receive only one message and we parallelize processing for you
     await barterdude.publish_amqp(
         exchange="my_exchange",
@@ -68,10 +75,10 @@ async def your_consumer(msg: RabbitMQMessage): # you receive only one message an
     if msg.body == "fail":
         prometheus.count(name="fail", description="fail again") # you can use prometheus metrics
         healthcheck.force_fail() # you can use your hooks inside consumer too
-        msg.reject(requeue=True) # You can force to reject a message, exactly equal https://b2wdigital.github.io/async-worker/src/asyncworker/asyncworker.rabbitmq.html#asyncworker.rabbitmq.message.RabbitMQMessage
+        msg.reject(requeue=False) # You can force to reject a message, exactly equal https://b2wdigital.github.io/async-worker/src/asyncworker/asyncworker.rabbitmq.html#asyncworker.rabbitmq.message.RabbitMQMessage
 
     if msg.body == "exception":
-        raise Exception() # this will reject the message WITHOUT requeue to avoid processing loop
+        raise Exception() # this will reject the message and requeue
     
     # if everything is fine, than message automatically is accepted 
 

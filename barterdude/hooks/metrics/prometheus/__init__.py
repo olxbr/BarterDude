@@ -4,11 +4,12 @@ from typing import Optional
 from asyncworker.rabbitmq.message import RabbitMQMessage
 from barterdude import BarterDude
 from barterdude.hooks import HttpHook
-from barterdude.hooks.metrics.prometheus.definition import Definition
-from barterdude.hooks.metrics.prometheus.metrics import Metric
+from barterdude.hooks.metrics.prometheus.definitions import Definitions
+from barterdude.hooks.metrics.prometheus.metrics import Metrics
 try:
     from prometheus_client import (
         CollectorRegistry,
+        REGISTRY,
         generate_latest,
         CONTENT_TYPE_LATEST,
     )
@@ -21,82 +22,31 @@ except ImportError:  # pragma: no cover
 
 class Prometheus(HttpHook):
 
-    MESSAGE_UNITS = "messages"
-    TIME_UNITS = "seconds"
-    NAMESPACE = "barterdude"
-    D_BEFORE_CONSUME = "before_consume"
-    D_SUCCESS = "success"
-    D_FAIL = "fail"
-    D_TIME_MEASURE = "time_measure"
-
     def __init__(
         self,
         barterdude: BarterDude,
         labels: dict,
         path: str = "/metrics",
-        registry: CollectorRegistry = CollectorRegistry(),
-        definition: Definition = Definition()):
+        registry: CollectorRegistry = REGISTRY
+
+    ):
         self.__registry = registry
         self.__labels = labels
-        self._d = definition
+        self.__metrics = Metrics(self.__registry)
+        self.__definitions = Definitions(
+            registry, self.__metrics, list(labels.keys())
+        )
         self._msg_start = {}
-        self.__prepare_metrics()
+        self.__definitions.save_metrics()
         super(Prometheus, self).__init__(barterdude, path)
 
-    def __prepare_metrics(self):
-        self._d.prepare_before_consume(
-            self.D_BEFORE_CONSUME,
-            labelnames=list(self.__labels.keys()),
-            namespace=self.NAMESPACE,
-            unit=self.MESSAGE_UNITS,
-            registry=self.__registry
-        )
-        self._d.prepare_on_complete(
-            self.D_SUCCESS,
-            labelnames=list(self.__labels.keys()),
-            namespace=self.NAMESPACE,
-            unit=self.MESSAGE_UNITS,
-            registry=self.__registry
-        )
-        self._d.prepare_on_complete(
-            self.D_FAIL,
-            labelnames=list(self.__labels.keys()),
-            namespace=self.NAMESPACE,
-            unit=self.MESSAGE_UNITS,
-            registry=self.__registry
-        )
-        self._d.prepare_time_measure(
-            self.D_TIME_MEASURE,
-            labelnames=list(self.__labels.keys()),
-            namespace=self.NAMESPACE,
-            unit=self.TIME_UNITS,
-            registry=self.__registry
-        )
-
-    def metric(self, 
-        name,
-        documentation,
-        labelnames=list(self.__labels.keys()),
-        namespace=self.NAMESPACE,
-        subsystem='',
-        unit='',
-        labelvalues=list(self.__labels.values()),
-        **kwargs):
-        return Metric(
-            name=name,
-            documentation=documentation,
-            labelnames=labelnames,
-            namespace=namespace,
-            subsystem=subsystem,
-            unit=unit,
-            labelvalues=labelvalues,
-            registry=self.__registry,
-            **kwargs
-        )
+    @property
+    def metrics(self):
+        return self.__metrics
 
     async def before_consume(self, message: RabbitMQMessage):
         hash_message = id(message)
-        self._d.metrics[self.D_BEFORE_CONSUME].labels(
+        self.metrics[self.__definitions.BEFORE_CONSUME].labels(
             **self.__labels
         ).inc()
         self._msg_start[hash_message] = time.time()
@@ -111,16 +61,17 @@ class Prometheus(HttpHook):
         labels = self.__labels.copy()
         labels["state"] = state
         labels["error"] = str(type(error)) if (error) else None
-        self._d.metrics[state].labels(**labels).inc()
-        self._d.metrics[self.D_TIME_MEASURE].labels(**labels).observe(
-            final_time - self._msg_start.pop(hash_message)
+        self.metrics[state].labels(**labels).inc()
+        self.metrics[self.__definitions.TIME_MEASURE].labels(
+            **labels).observe(
+                final_time - self._msg_start.pop(hash_message)
         )
 
     async def on_success(self, message: RabbitMQMessage):
-        await self._on_complete(message, self.D_SUCCESS)
+        await self._on_complete(message, self.__definitions.SUCCESS)
 
     async def on_fail(self, message: RabbitMQMessage, error: Exception):
-        await self._on_complete(message, self.D_FAIL, error)
+        await self._on_complete(message, self.__definitions.FAIL, error)
 
     async def __call__(self, req: web.Request):
         return web.Response(

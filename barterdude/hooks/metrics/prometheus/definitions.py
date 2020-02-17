@@ -1,3 +1,4 @@
+import copy
 from prometheus_client import (
     CollectorRegistry,
     Counter,
@@ -7,26 +8,64 @@ from typing import Iterable
 from barterdude.hooks.metrics.prometheus.metrics import Metrics
 
 
-class Definition:
+class Definitions:
+
+    MESSAGE_UNITS = "messages"
+    TIME_UNITS = "seconds"
+    NAMESPACE = "barterdude"
+    BEFORE_CONSUME = "before_consume"
+    SUCCESS = "success"
+    FAIL = "fail"
+    TIME_MEASURE = "time_measure"
 
     def __init__(
         self,
-        histogram_buckets: tuple = Histogram.DEFAULT_BUCKETS,
-        metrics: Metrics = Metrics()
+        registry: CollectorRegistry,
+        metrics: Metrics,
+        labelkeys: Iterable[str],
+        time_buckets: tuple = Histogram.DEFAULT_BUCKETS
     ):
-        self.__histogram_buckets = histogram_buckets
+        self.__registry = registry
+        self.__labelkeys = labelkeys
+        self.__time_buckets = time_buckets
         self.__metrics = metrics
 
-    @property
-    def metrics(self):
-        return self.__metrics
+    def save_metrics(self):
+        self._prepare_before_consume(
+            self.BEFORE_CONSUME,
+            labelnames=copy.copy(self.__labelkeys),
+            namespace=self.NAMESPACE,
+            unit=self.MESSAGE_UNITS,
+            registry=self.__registry
+        )
+        self._prepare_on_complete(
+            self.SUCCESS,
+            labelnames=copy.copy(self.__labelkeys),
+            namespace=self.NAMESPACE,
+            unit=self.MESSAGE_UNITS,
+            registry=self.__registry
+        )
+        self._prepare_on_complete(
+            self.FAIL,
+            labelnames=copy.copy(self.__labelkeys),
+            namespace=self.NAMESPACE,
+            unit=self.MESSAGE_UNITS,
+            registry=self.__registry
+        )
+        self._prepare_time_measure(
+            self.TIME_MEASURE,
+            labelnames=copy.copy(self.__labelkeys),
+            namespace=self.NAMESPACE,
+            unit=self.TIME_UNITS,
+            registry=self.__registry
+        )
 
-    def prepare_before_consume(
+    def _prepare_before_consume(
             self, name: str, labelnames: Iterable[str] = (),
             namespace: str = "", unit: str = "",
             registry: CollectorRegistry = CollectorRegistry()):
 
-        self.metrics[name] = Counter(
+        self.__metrics[name] = Counter(
                 name="received_number_before_consume",
                 documentation="Messages that worker received from queue(s)",
                 labelnames=labelnames,
@@ -35,14 +74,14 @@ class Definition:
                 registry=registry
             )
 
-    def prepare_on_complete(
+    def _prepare_on_complete(
             self, state: str, labelnames: Iterable[str] = (),
             namespace: str = "", unit: str = "",
             registry: CollectorRegistry = CollectorRegistry()):
 
         labelnames += ["state", "error"]
 
-        self.metrics[state] = Counter(
+        self.__metrics[state] = Counter(
                 name=f"consumed_number_on_{state}",
                 documentation=(f"Messages that worker consumed with {state}"
                                " from queue(s)"),
@@ -52,18 +91,18 @@ class Definition:
                 registry=registry
             )
 
-    def prepare_time_measure(
+    def _prepare_time_measure(
             self, name: str, labelnames: Iterable[str] = (),
             namespace: str = "", unit: str = "",
             registry: CollectorRegistry = CollectorRegistry()):
 
         labelnames += ["state", "error"]
 
-        self.metrics[name] = Histogram(
+        self.__metrics[name] = Histogram(
                 name="time_spent_processing_message",
                 documentation=("Time spent when function was "
                                "processing a message"),
-                buckets=self.__histogram_buckets,
+                buckets=self.__time_buckets,
                 labelnames=labelnames,
                 namespace=namespace,
                 unit=unit,

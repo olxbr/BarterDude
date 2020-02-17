@@ -1,10 +1,10 @@
 from asynctest import TestCase, Mock, MagicMock
 
-from barterdude.hooks.metrics.prometheus.definition import Definition
-from prometheus_client.metrics import Counter, Histogram
+from barterdude.hooks.metrics.prometheus.definitions import Definitions
+from prometheus_client.metrics import Counter, Histogram, REGISTRY
 
 
-class TestDefinition(TestCase):
+class TestDefinitions(TestCase):
 
     def setUp(self):
         self.metrics = MagicMock()
@@ -13,11 +13,13 @@ class TestDefinition(TestCase):
         self.default_kwargs = {
             "labelnames": ["test"]
         }
-        self.definition = Definition(metrics=self.metrics)
+        self.definitions = Definitions(
+            registry=REGISTRY, metrics=self.metrics, labelkeys=["labelnames"]
+        )
 
     def test_should_prepare_before_consume(self):
         name = "my_metric"
-        self.definition.prepare_before_consume(
+        self.definitions._prepare_before_consume(
             name,
             **self.default_kwargs
         )
@@ -28,7 +30,7 @@ class TestDefinition(TestCase):
 
     def test_should_prepare_on_complete(self):
         name = "my_metric"
-        self.definition.prepare_on_complete(
+        self.definitions._prepare_on_complete(
             name,
             **self.default_kwargs
         )
@@ -39,7 +41,7 @@ class TestDefinition(TestCase):
 
     def test_should_prepare_time_measure(self):
         name = "my_metric"
-        self.definition.prepare_time_measure(
+        self.definitions._prepare_time_measure(
             name,
             **self.default_kwargs
         )
