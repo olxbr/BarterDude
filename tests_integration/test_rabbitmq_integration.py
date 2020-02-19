@@ -5,6 +5,7 @@ from asynctest import TestCase
 from barterdude import BarterDude
 from barterdude.monitor import Monitor
 from barterdude.hooks.healthcheck import Healthcheck
+from barterdude.hooks.logging import Logging
 from barterdude.hooks.metrics.prometheus import Prometheus
 from asyncworker.connections import AMQPConnection
 from random import choices
@@ -251,5 +252,36 @@ class RabbitMQConsumerTest(TestCase):
         self.assertNotEquals(-1, text.find(
             'barterdude_received_number_before_consume_messages_total'
             '{app_name="barterdude_consumer"} 1.0'))
+
+        await self.app.shutdown()
+
+    async def test_print_logs(self):
+        monitor = Monitor(Logging())
+        error = Exception("raise expected")
+
+        @self.app.consume_amqp([self.input_queue], monitor)
+        async def handler(message):
+            if message.body == self.messages[0]:
+                raise error
+
+        await self.app.startup()
+
+        with self.assertLogs("barterdude") as cm:
+            await self.queue_manager.put(
+                routing_key=self.input_queue,
+                data=self.messages[0]
+            )
+            await asyncio.sleep(1)
+
+        message_str = repr(self.messages[0])
+        error_str = repr(error)
+        self.assertEqual(
+            cm.output[0],
+            f"INFO:barterdude:going to consume message: {message_str}"
+        )
+        self.assertTrue(
+            f"ERROR:barterdude:failed to consume message: {message_str}\n"
+            f"{error_str}\n" in cm.output[1]
+        )
 
         await self.app.shutdown()
