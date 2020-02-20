@@ -1,4 +1,4 @@
-import copy
+from copy import copy
 from prometheus_client import (
     CollectorRegistry,
     Counter,
@@ -33,78 +33,60 @@ class Definitions:
     def save_metrics(self):
         self._prepare_before_consume(
             self.BEFORE_CONSUME,
-            labelnames=copy.copy(self.__labelkeys),
             namespace=self.NAMESPACE,
             unit=self.MESSAGE_UNITS,
-            registry=self.__registry
         )
         self._prepare_on_complete(
             self.SUCCESS,
-            labelnames=copy.copy(self.__labelkeys),
             namespace=self.NAMESPACE,
             unit=self.MESSAGE_UNITS,
-            registry=self.__registry
         )
         self._prepare_on_complete(
             self.FAIL,
-            labelnames=copy.copy(self.__labelkeys),
             namespace=self.NAMESPACE,
             unit=self.MESSAGE_UNITS,
-            registry=self.__registry
         )
         self._prepare_time_measure(
             self.TIME_MEASURE,
-            labelnames=copy.copy(self.__labelkeys),
             namespace=self.NAMESPACE,
             unit=self.TIME_UNITS,
-            registry=self.__registry
         )
 
     def _prepare_before_consume(
-            self, name: str, labelnames: Iterable[str] = (),
-            namespace: str = "", unit: str = "",
-            registry: CollectorRegistry = CollectorRegistry()):
+            self, name: str, namespace: str = "", unit: str = ""):
 
         self.__metrics[name] = Counter(
                 name="received_number_before_consume",
                 documentation="Messages that worker received from queue(s)",
-                labelnames=labelnames,
+                labelnames=copy(self.__labelkeys),
                 namespace=namespace,
                 unit=unit,
-                registry=registry
+                registry=self.__registry
             )
 
     def _prepare_on_complete(
-            self, state: str, labelnames: Iterable[str] = (),
-            namespace: str = "", unit: str = "",
-            registry: CollectorRegistry = CollectorRegistry()):
-
-        labelnames += ["state", "error"]
+            self, state: str, namespace: str = "", unit: str = ""):
 
         self.__metrics[state] = Counter(
                 name=f"consumed_number_on_{state}",
                 documentation=(f"Messages that worker consumed with {state}"
                                " from queue(s)"),
-                labelnames=labelnames,
+                labelnames=self.__labelkeys + ["state", "error"],
                 namespace=namespace,
                 unit=unit,
-                registry=registry
+                registry=self.__registry
             )
 
     def _prepare_time_measure(
-            self, name: str, labelnames: Iterable[str] = (),
-            namespace: str = "", unit: str = "",
-            registry: CollectorRegistry = CollectorRegistry()):
-
-        labelnames += ["state", "error"]
+            self, name: str, namespace: str = "", unit: str = ""):
 
         self.__metrics[name] = Histogram(
                 name="time_spent_processing_message",
                 documentation=("Time spent when function was "
                                "processing a message"),
                 buckets=self.__time_buckets,
-                labelnames=labelnames,
+                labelnames=self.__labelkeys + ["state", "error"],
                 namespace=namespace,
                 unit=unit,
-                registry=registry
+                registry=self.__registry,
             )

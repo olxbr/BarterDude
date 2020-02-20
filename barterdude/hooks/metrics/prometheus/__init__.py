@@ -9,7 +9,6 @@ from barterdude.hooks.metrics.prometheus.metrics import Metrics
 try:
     from prometheus_client import (
         CollectorRegistry,
-        REGISTRY,
         generate_latest,
         CONTENT_TYPE_LATEST,
     )
@@ -27,14 +26,13 @@ class Prometheus(HttpHook):
         barterdude: BarterDude,
         labels: dict,
         path: str = "/metrics",
-        registry: CollectorRegistry = REGISTRY
-
+        registry: CollectorRegistry = None
     ):
-        self.__registry = registry
+        self.__registry = registry or CollectorRegistry()
         self.__labels = labels
         self.__metrics = Metrics(self.__registry)
         self.__definitions = Definitions(
-            registry, self.__metrics, list(labels.keys())
+            self.__registry, self.__metrics, list(labels.keys())
         )
         self._msg_start = {}
         self.__definitions.save_metrics()

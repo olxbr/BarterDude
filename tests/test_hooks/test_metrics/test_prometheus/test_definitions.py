@@ -10,9 +10,6 @@ class TestDefinitions(TestCase):
         self.metrics = MagicMock()
         self.metric = Mock()
         self.metrics.__getitem__.return_value = self.metric
-        self.default_kwargs = {
-            "labelnames": ["test"]
-        }
         self.definitions = Definitions(
             registry=REGISTRY, metrics=self.metrics, labelkeys=["labelnames"]
         )
@@ -21,7 +18,6 @@ class TestDefinitions(TestCase):
         name = "my_metric"
         self.definitions._prepare_before_consume(
             name,
-            **self.default_kwargs
         )
         self.metrics.__setitem__.assert_called_once()
         mock_call = self.metrics.__setitem__.call_args[0]
@@ -32,7 +28,6 @@ class TestDefinitions(TestCase):
         name = "my_metric"
         self.definitions._prepare_on_complete(
             name,
-            **self.default_kwargs
         )
         self.metrics.__setitem__.assert_called_once()
         mock_call = self.metrics.__setitem__.call_args[0]
@@ -43,7 +38,6 @@ class TestDefinitions(TestCase):
         name = "my_metric"
         self.definitions._prepare_time_measure(
             name,
-            **self.default_kwargs
         )
         self.metrics.__setitem__.assert_called_once()
         mock_call = self.metrics.__setitem__.call_args[0]
