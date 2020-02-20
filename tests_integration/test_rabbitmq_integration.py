@@ -255,6 +255,15 @@ class RabbitMQConsumerTest(TestCase):
 
         await self.app.shutdown()
 
+    async def test_register_multiple_prometheus_hooks(self):
+        """This test raised the following error:
+           ValueError: Duplicated timeseries in CollectorRegistry"""
+
+        Monitor(
+            Prometheus(self.app, {"app_name": "barterdude1"}, "/metrics1"),
+            Prometheus(self.app, {"app_name": "barterdude2"}, "/metrics2"),
+        )
+
     async def test_print_logs(self):
         monitor = Monitor(Logging())
         error = Exception("raise expected")
