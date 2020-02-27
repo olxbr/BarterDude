@@ -7,7 +7,7 @@ from typing import Iterable
 from barterdude.monitor import Monitor
 
 
-class BarterDude():
+class BarterDude:
     def __init__(  # nosec
         self,
         hostname: str = "127.0.0.1",
