@@ -7,6 +7,7 @@ from barterdude.monitor import Monitor
 from barterdude.hooks.healthcheck import Healthcheck
 from barterdude.hooks.logging import Logging
 from barterdude.hooks.metrics.prometheus import Prometheus
+from helpers import ErrorHook
 from asyncworker.connections import AMQPConnection
 from random import choices
 from string import ascii_uppercase
@@ -74,6 +75,25 @@ class RabbitMQConsumerTest(TestCase):
         received_messages = set()
 
         @self.app.consume_amqp([self.input_queue], coroutines=1)
+        async def handler(message):
+            nonlocal received_messages
+            received_messages.add(message.body["key"])
+
+        await self.app.startup()
+        await self.send_all_messages()
+        await asyncio.sleep(1)
+
+        for message in self.messages:
+            self.assertTrue(message["key"] in received_messages)
+
+        await self.app.shutdown()
+
+    async def test_process_messages_successfully_even_with_crashed_hook(self):
+        received_messages = set()
+
+        monitor = Monitor(ErrorHook())
+        @self.app.consume_amqp([self.input_queue], coroutines=1,
+                               monitor=monitor)
         async def handler(message):
             nonlocal received_messages
             received_messages.add(message.body["key"])
@@ -202,6 +222,32 @@ class RabbitMQConsumerTest(TestCase):
 
     async def test_obtains_healthcheck(self):
         monitor = Monitor(Healthcheck(self.app))
+
+        @self.app.consume_amqp([self.input_queue], monitor)
+        async def handler(message):
+            pass
+
+        await self.app.startup()
+        await self.queue_manager.put(
+            routing_key=self.input_queue,
+            data=self.messages[0]
+        )
+        await asyncio.sleep(1)
+
+        async with aiohttp.ClientSession() as session:
+            timeout = aiohttp.ClientTimeout(total=1)
+            url = 'http://localhost:8080/healthcheck'
+            async with session.get(url, timeout=timeout) as response:
+                status_code = response.status
+                text = await response.text()
+
+        self.assertEquals(status_code, 200)
+        self.assertEquals(text, "Bater like a pro! Success rate: 1.0")
+
+        await self.app.shutdown()
+
+    async def test_obtains_healthcheck_even_with_crashed_hook(self):
+        monitor = Monitor(ErrorHook(), Healthcheck(self.app))
 
         @self.app.consume_amqp([self.input_queue], monitor)
         async def handler(message):
