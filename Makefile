@@ -12,6 +12,9 @@ lint:
 test:
 	@nosetests --exclude="tests_integration" --with-coverage --cover-erase --cover-package=barterdude
 
+test-container:
+	@docker-compose run --rm barterdude nosetests --exclude="tests_integration" --with-coverage --cover-erase --cover-package=barterdude
+
 integration:
 	@nosetests -w tests_integration/
 
