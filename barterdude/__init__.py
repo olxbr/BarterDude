@@ -90,3 +90,18 @@ class BarterDude:
 
     def run(self):
         self.__app.run()
+
+    def __getitem__(self, key):
+        return self.__app[key]
+
+    def __setitem__(self, key, value):
+        self.__app[key] = value
+
+    def __delitem__(self, key):
+        del self.__app[key]
+
+    def __len__(self):
+        return len(self.__app)
+
+    def __iter__(self):
+        return iter(self.__app)

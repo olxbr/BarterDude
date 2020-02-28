@@ -122,3 +122,42 @@ class TestBarterDude(TestCase):
     def test_should_call_run(self):
         self.barterdude.run()
         self.app.run.assert_called_once_with()
+
+
+class TestAppSharedProperties(TestCase):
+    def setUp(self):
+        self.barterdude = BarterDude()
+
+    def test_setitem_changes_state(self):
+        self.barterdude["foo"] = foo = Mock()
+        self.assertEqual(foo, self.barterdude["foo"])
+
+    async def test_getitem_returns_internal_state_value(self):
+        self.barterdude["foo"] = "bar"
+        self.assertEqual("bar", self.barterdude["foo"])
+
+    def test_delitem_changes_state(self):
+        self.barterdude["foo"] = foo = Mock()
+        self.assertEqual(foo, self.barterdude["foo"])
+
+        del self.barterdude["foo"]
+        with self.assertRaises(KeyError):
+            self.assertIsNone(self.barterdude["foo"])
+
+    def test_len_returns_state_len(self):
+        test_data = {"foo": 1, "bar": 2}
+        for k, v in test_data.items():
+            self.barterdude[k] = v
+
+        self.assertEqual(
+            len(self.barterdude),
+            len(dict(self.barterdude._BarterDude__app))
+        )
+
+    async def test_iter_iters_through_internal_state_value(self):
+        test_data = {"foo": 1, "bar": 2}
+        for k, v in test_data.items():
+            self.barterdude[k] = v
+
+        state = dict(**self.barterdude._BarterDude__app)
+        self.assertDictContainsSubset(test_data, state)
