@@ -18,7 +18,7 @@ integration:
 all-tests: test integration lint check-sec
 
 all-tests-container:
-	@docker-compose run --rm barterdude make test integration lint check-sec
+	@docker-compose run --rm barterdude make all-tests
 
 check-sec:
 	@echo "Running Bandit..."

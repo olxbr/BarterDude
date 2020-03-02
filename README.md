@@ -80,8 +80,8 @@ async def your_consumer(msg: RabbitMQMessage): # you receive only one message an
 
     if msg.body == "exception":
         raise Exception() # this will reject the message and requeue
-    
-    # if everything is fine, than message automatically is accepted 
+
+    # if everything is fine, than message automatically is accepted
 
 
 barterdude.run() # you will start consume and start a server on http://localhost:8080
@@ -142,6 +142,28 @@ class MyCounterHttpHook(HttpHook):
         self._consume += 1
 
 
+```
+
+### Data Sharing
+
+Following the approach found in [async-worker](https://b2wdigital.github.io/async-worker/userguide/asyncworker-app/storage.html) and in [aiohttp](https://docs.aiohttp.org/en/stable/web_advanced.html#data-sharing-aka-no-singletons-please),
+`BarterDude` discourages the use of global variables, aka singletons.
+
+To share data states globally in an application, `BarterDude` behaves like a `dict`.
+As an example, one can save a global-like variable in a  `BarterDude` instance:
+
+```python
+from barterdude import BarterDude
+
+barterdude = BarterDude()
+baterdude["my_variable"] = data
+```
+
+and get it back in a consumer
+
+```python
+async def consumer_access_storage(msg):
+    data = baterdude["my_variable"]
 ```
 
 ### Testing
