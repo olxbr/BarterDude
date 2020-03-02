@@ -14,6 +14,7 @@ test:
 
 test-container:
 	@docker-compose run --rm barterdude nosetests --exclude="tests_integration" --with-coverage --cover-erase --cover-package=barterdude
+	@docker-compose run --rm barterdude nosetests -w tests_integration/
 
 integration:
 	@nosetests -w tests_integration/
