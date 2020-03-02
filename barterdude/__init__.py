@@ -3,11 +3,12 @@ from asyncworker import App, RouteTypes
 from asyncworker.options import Options
 from asyncworker.connections import AMQPConnection
 from asyncworker.rabbitmq.message import RabbitMQMessage
+from collections import MutableMapping
 from typing import Iterable
 from barterdude.monitor import Monitor
 
 
-class BarterDude:
+class BarterDude(MutableMapping):
     def __init__(  # nosec
         self,
         hostname: str = "127.0.0.1",
@@ -90,3 +91,18 @@ class BarterDude:
 
     def run(self):
         self.__app.run()
+
+    def __getitem__(self, key):
+        return self.__app[key]
+
+    def __setitem__(self, key, value):
+        self.__app[key] = value
+
+    def __delitem__(self, key):
+        del self.__app[key]
+
+    def __len__(self):
+        return len(self.__app)
+
+    def __iter__(self):
+        return iter(self.__app)

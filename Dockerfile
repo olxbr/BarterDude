@@ -1,0 +1,10 @@
+FROM python:3.7-buster
+
+WORKDIR /app
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONIOENCODING=utf-8
+ENV PYTHONPATH=/app
+
+COPY . /app
+RUN make setup
