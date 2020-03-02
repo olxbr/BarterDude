@@ -159,5 +159,5 @@ class TestAppSharedProperties(TestCase):
         for k, v in test_data.items():
             self.barterdude[k] = v
 
-        state = dict(**self.barterdude._BarterDude__app)
+        state = dict(**self.barterdude)
         self.assertDictContainsSubset(test_data, state)
