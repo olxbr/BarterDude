@@ -12,14 +12,13 @@ lint:
 test:
 	@nosetests --exclude="tests_integration" --with-coverage --cover-erase --cover-package=barterdude
 
-test-container:
-	@docker-compose run --rm barterdude nosetests --exclude="tests_integration" --with-coverage --cover-erase --cover-package=barterdude
-	@docker-compose run --rm barterdude nosetests -w tests_integration/
-
 integration:
 	@nosetests -w tests_integration/
 
 all-tests: test integration lint check-sec
+
+all-tests-container:
+	@docker-compose run --rm barterdude make test integration lint check-sec
 
 check-sec:
 	@echo "Running Bandit..."

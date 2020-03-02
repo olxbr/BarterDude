@@ -4,3 +4,16 @@ services:
     build: .
     volumes:
       - .:/app
+    depends_on:
+      - rabbitmq
+    links:
+      - rabbitmq
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+      - BARTERDUDE_HOST=0.0.0.0
+
+  rabbitmq:
+    image: rabbitmq:3.8.2
+    ports:
+      - "5672:5672"
+      - "15672:15672"

@@ -1,3 +1,4 @@
+import os
 import aiohttp
 import asyncio
 
@@ -20,10 +21,12 @@ class RabbitMQConsumerTest(TestCase):
         self.input_queue = "test"
         self.output_exchange = "test_exchange"
         self.output_queue = "test_output"
+        self.rabbitmq_host = os.environ.get("RABBITMQ_HOST", "127.0.0.1")
+        self.barterdude_host = os.environ.get("BARTERDUDE_HOST", "127.0.0.1")
 
         self.connection = AMQPConnection(  # nosec
             name="barterdude-test",
-            hostname="127.0.0.1",
+            hostname=self.rabbitmq_host,
             username="guest",
             password="guest",
             prefetch=1
@@ -48,7 +51,7 @@ class RabbitMQConsumerTest(TestCase):
             message = {"key": "".join(choices(ascii_uppercase, k=16))}
             self.messages.append(message)
 
-        self.app = BarterDude()
+        self.app = BarterDude(hostname=self.rabbitmq_host)
 
     async def tearDown(self):
         await self.queue_manager.connection.channel.queue_delete(
@@ -236,7 +239,7 @@ class RabbitMQConsumerTest(TestCase):
 
         async with aiohttp.ClientSession() as session:
             timeout = aiohttp.ClientTimeout(total=1)
-            url = 'http://localhost:8080/healthcheck'
+            url = f'http://{self.barterdude_host}:8080/healthcheck'
             async with session.get(url, timeout=timeout) as response:
                 status_code = response.status
                 text = await response.text()
@@ -262,7 +265,7 @@ class RabbitMQConsumerTest(TestCase):
 
         async with aiohttp.ClientSession() as session:
             timeout = aiohttp.ClientTimeout(total=1)
-            url = 'http://localhost:8080/healthcheck'
+            url = f'http://{self.barterdude_host}:8080/healthcheck'
             async with session.get(url, timeout=timeout) as response:
                 status_code = response.status
                 text = await response.text()
@@ -289,7 +292,7 @@ class RabbitMQConsumerTest(TestCase):
 
         async with aiohttp.ClientSession() as session:
             timeout = aiohttp.ClientTimeout(total=1)
-            url = 'http://localhost:8080/metrics'
+            url = f'http://{self.barterdude_host}:8080/metrics'
             async with session.get(url, timeout=timeout) as response:
                 status_code = response.status
                 text = await response.text()
