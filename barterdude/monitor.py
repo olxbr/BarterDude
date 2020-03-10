@@ -1,13 +1,15 @@
-from logging import getLogger
+from traceback import format_tb
+from typing import Iterable, Callable, Optional, Any
+
 from asyncio import gather
 from asyncworker.rabbitmq.message import RabbitMQMessage
-from typing import Iterable, Callable, Optional, Any
+
+from barterdude.conf import logger
 
 
 class Monitor:
     def __init__(self, *hooks: Iterable):
         self.__hooks = hooks
-        self.__logger = getLogger('barterdude')
 
     async def _callback(self,
                         method: Callable[[RabbitMQMessage], Optional[Any]],
@@ -16,7 +18,11 @@ class Monitor:
         try:
             return await (method(message, error) if error else method(message))
         except Exception as e:
-            self.__logger.warning(f"Error on hook method {method}: %s", e)
+            logger.error({
+                "message": f"Error on hook method {method}",
+                "exception": repr(e),
+                "traceback": format_tb(e.__traceback__),
+            })
 
     def _prepare_callbacks(self, method_name: str,
                            message: RabbitMQMessage,

@@ -331,15 +331,21 @@ class RabbitMQConsumerTest(TestCase):
             )
             await asyncio.sleep(1)
 
-        message_str = repr(self.messages[0])
+        key = self.messages[0]["key"]
         error_str = repr(error)
-        self.assertEqual(
-            cm.output[0],
-            f"INFO:barterdude:going to consume message: {message_str}"
+
+        self.assertIn("'message': 'Before consume message'", cm.output[0])
+        self.assertIn(
+            f"'message_body': '{{\"key\": \"{key}\"}}'", cm.output[0]
         )
-        self.assertTrue(
-            f"ERROR:barterdude:failed to consume message: {message_str}\n"
-            f"{error_str}\n" in cm.output[1]
+        self.assertIn("'delivery_tag': 1", cm.output[0])
+
+        self.assertIn("'message': 'Failed to consume message'", cm.output[1])
+        self.assertIn(
+            f"'message_body': '{{\"key\": \"{key}\"}}'", cm.output[1]
         )
+        self.assertIn("'delivery_tag': 1", cm.output[1])
+        self.assertIn(f"'exception': \"{error_str}\"", cm.output[1])
+        self.assertIn("'traceback': [", cm.output[1])
 
         await self.app.shutdown()

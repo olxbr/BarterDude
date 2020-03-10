@@ -1,21 +1,32 @@
-from logging import getLogger
+import json
 from traceback import format_tb
-from barterdude.hooks import BaseHook
+
 from asyncworker.rabbitmq.message import RabbitMQMessage
+
+from barterdude.conf import logger
+from barterdude.hooks import BaseHook
 
 
 class Logging(BaseHook):
-    def __init__(self):
-        self.__logger = getLogger('barterdude')
-
     async def before_consume(self, message: RabbitMQMessage):
-        self.__logger.info(f"going to consume message: {message.body}")
+        logger.info({
+            "message": "Before consume message",
+            "delivery_tag": message._delivery_tag,
+            "message_body": json.dumps(message.body),
+        })
 
     async def on_success(self, message: RabbitMQMessage):
-        self.__logger.info(f"successfully consumed message: {message.body}")
+        logger.info({
+            "message": "Successfully consumed message",
+            "delivery_tag": message._delivery_tag,
+            "message_body": json.dumps(message.body),
+        })
 
     async def on_fail(self, message: RabbitMQMessage, error: Exception):
-        tb = format_tb(error.__traceback__)
-        self.__logger.error(
-            f"failed to consume message: {message.body}\n{repr(error)}\n{tb}"
-        )
+        logger.error({
+            "message": "Failed to consume message",
+            "delivery_tag": message._delivery_tag,
+            "message_body": json.dumps(message.body),
+            "exception": repr(error),
+            "traceback": format_tb(error.__traceback__),
+        })

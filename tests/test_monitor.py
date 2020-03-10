@@ -1,4 +1,4 @@
-from asynctest import TestCase, Mock, CoroutineMock
+from asynctest import TestCase, Mock, CoroutineMock, patch
 from barterdude.monitor import Monitor
 
 
@@ -36,3 +36,24 @@ class TestMonitor(TestCase):
         self.hook2.on_fail.assert_called_once()
         self.hook1.on_fail.assert_called_with({}, exception)
         self.hook2.on_fail.assert_called_with({}, exception)
+
+    @patch("barterdude.monitor.logger")
+    @patch("barterdude.monitor.repr")
+    @patch("barterdude.monitor.format_tb")
+    async def test_should_log_if_hook_fail(self, format_tb, repr, logger):
+        exception = Exception()
+
+        async def before_consume(msg):
+            raise exception
+
+        self.hook1.before_consume = before_consume
+        self.hook2.before_consume = CoroutineMock()
+        await self.monitor.dispatch_before_consume({})
+        repr.assert_called_once_with(exception)
+        format_tb.assert_called_once_with(exception.__traceback__)
+        logger.error.assert_called_once_with({
+            "message": f"Error on hook method {before_consume}",
+            "exception": repr.return_value,
+            "traceback": format_tb.return_value,
+        })
+        self.hook2.before_consume.assert_called_with({})

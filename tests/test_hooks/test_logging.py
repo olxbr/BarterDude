@@ -1,40 +1,50 @@
-from traceback import format_tb
 from asynctest import TestCase, Mock, patch
 from barterdude.hooks.logging import Logging
 
 
 class TestLogging(TestCase):
-    @patch("barterdude.hooks.logging.getLogger")
-    def setUp(self, getLogger):
+    maxDiff = None
+
+    def setUp(self):
         self.message = Mock()
-        self.message.body = {
-            "senderAccountId": "32074499",
-            "messageTimestamp": "2019-12-26T19:35:10.049Z",
-            "chatId": "691645593-18833924-32074499"
-        }
-        self.logger = getLogger.return_value
         self.logging = Logging()
 
-    async def test_should_log_before_consume(self):
+    @patch("barterdude.hooks.logging.logger")
+    @patch("barterdude.hooks.logging.json.dumps")
+    async def test_should_log_before_consume(self, dumps, logger):
         await self.logging.before_consume(self.message)
-        self.logger.info.assert_called_once()
-        self.logger.info.assert_called_with(
-            f"going to consume message: {self.message.body}"
-        )
+        dumps.assert_called_once_with(self.message.body)
+        logger.info.assert_called_once_with({
+            "message": "Before consume message",
+            "delivery_tag": self.message._delivery_tag,
+            "message_body": dumps.return_value,
+        })
 
-    async def test_should_log_on_success(self):
+    @patch("barterdude.hooks.logging.logger")
+    @patch("barterdude.hooks.logging.json.dumps")
+    async def test_should_log_on_success(self, dumps, logger):
         await self.logging.on_success(self.message)
-        self.logger.info.assert_called_once()
-        self.logger.info.assert_called_with(
-            f"successfully consumed message: {self.message.body}"
-        )
+        dumps.assert_called_once_with(self.message.body)
+        logger.info.assert_called_once_with({
+            "message": "Successfully consumed message",
+            "delivery_tag": self.message._delivery_tag,
+            "message_body": dumps.return_value,
+        })
 
-    async def test_should_log_on_fail(self):
-        error = KeyError('key not find')
-        tb = format_tb(error.__traceback__)
-        await self.logging.on_fail(self.message, error)
-        self.logger.error.assert_called_once()
-        self.logger.error.assert_called_with(
-            f"failed to consume message: {self.message.body}\n"
-            f"{repr(error)}\n{tb}"
-        )
+    @patch("barterdude.hooks.logging.logger")
+    @patch("barterdude.hooks.logging.json.dumps")
+    @patch("barterdude.hooks.logging.repr")
+    @patch("barterdude.hooks.logging.format_tb")
+    async def test_should_log_on_fail(self, format_tb, repr, dumps, logger):
+        exception = Exception()
+        await self.logging.on_fail(self.message, exception)
+        dumps.assert_called_once_with(self.message.body)
+        repr.assert_called_once_with(exception)
+        format_tb.assert_called_once_with(exception.__traceback__)
+        logger.error.assert_called_once_with({
+            "message": "Failed to consume message",
+            "delivery_tag": self.message._delivery_tag,
+            "message_body": dumps.return_value,
+            "exception": repr.return_value,
+            "traceback": format_tb.return_value,
+        })
