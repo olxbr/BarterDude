@@ -5,6 +5,8 @@ from barterdude.hooks.healthcheck import Healthcheck
 
 @freeze_time()
 class TestHealthcheck(TestCase):
+    maxDiff = None
+
     def setUp(self):
         self.success_rate = 0.9
         self.health_window = 60.0
@@ -22,7 +24,10 @@ class TestHealthcheck(TestCase):
         response = await self.healthcheck(Mock())
         self.assertEqual(response.status, 200)
         self.assertEqual(response.content_type, "text/plain")
-        self.assertEqual(response.body._value, b"No messages until now")
+        self.assertEqual(
+            response.body._value.decode('utf-8'),
+            '{"message": "No messages in last 60.0s", "status": "ok"}'
+        )
 
     async def test_should_pass_healthcheck_when_only_sucess(self):
         await self.healthcheck.on_success(None)
@@ -30,8 +35,9 @@ class TestHealthcheck(TestCase):
         self.assertEqual(response.status, 200)
         self.assertEqual(response.content_type, "text/plain")
         self.assertEqual(
-            response.body._value,
-            b"Bater like a pro! Success rate: 1.0"
+            response.body._value.decode('utf-8'),
+            '{"message": "Success rate: 1.0 (expect: 0.9)", '
+            '"fail": 0, "success": 1, "status": "ok"}'
         )
 
     async def test_should_pass_healthcheck_when_success_rate_is_high(self):
@@ -42,8 +48,9 @@ class TestHealthcheck(TestCase):
         self.assertEqual(response.status, 200)
         self.assertEqual(response.content_type, "text/plain")
         self.assertEqual(
-            response.body._value,
-            b"Bater like a pro! Success rate: 0.9"
+            response.body._value.decode('utf-8'),
+            '{"message": "Success rate: 0.9 (expect: 0.9)", '
+            '"fail": 1, "success": 9, "status": "ok"}'
         )
 
     async def test_should_fail_healthcheck_when_only_fail(self):
@@ -52,8 +59,9 @@ class TestHealthcheck(TestCase):
         self.assertEqual(response.status, 500)
         self.assertEqual(response.content_type, "text/plain")
         self.assertEqual(
-            response.body._value,
-            bytes(f"Success rate 0.0 bellow {self.success_rate}", "utf-8")
+            response.body._value.decode('utf-8'),
+            '{"message": "Success rate: 0.0 (expect: 0.9)", '
+            '"fail": 1, "success": 0, "status": "fail"}'
         )
 
     async def test_should_fail_healthcheck_when_success_rate_is_low(self):
@@ -63,8 +71,9 @@ class TestHealthcheck(TestCase):
         self.assertEqual(response.status, 500)
         self.assertEqual(response.content_type, "text/plain")
         self.assertEqual(
-            response.body._value,
-            bytes(f"Success rate 0.5 bellow {self.success_rate}", "utf-8")
+            response.body._value.decode('utf-8'),
+            '{"message": "Success rate: 0.5 (expect: 0.9)", '
+            '"fail": 1, "success": 1, "status": "fail"}'
         )
 
     async def test_should_fail_when_force_fail_is_called(self):
@@ -74,8 +83,8 @@ class TestHealthcheck(TestCase):
         self.assertEqual(response.status, 500)
         self.assertEqual(response.content_type, "text/plain")
         self.assertEqual(
-            response.body._value,
-            b"Healthcheck fail called manually"
+            response.body._value.decode('utf-8'),
+            '{"message": "Healthcheck fail called manually", "status": "fail"}'
         )
 
     async def test_should_erase_old_messages(self):
@@ -85,11 +94,8 @@ class TestHealthcheck(TestCase):
                 await self.healthcheck.on_fail(None, None)
             await self.healthcheck.on_success(None)
             response = await self.healthcheck(Mock())
-            rate = 1 / (1 + (self.health_window - tick) // tick)
             self.assertEqual(
-                response.body._value,
-                bytes(
-                    f"Success rate {rate} bellow {self.success_rate}",
-                    "utf-8"
-                )
+                response.body._value.decode('utf-8'),
+                '{"message": "Success rate: 0.125 (expect: 0.9)", '
+                '"fail": 7, "success": 1, "status": "fail"}'
             )

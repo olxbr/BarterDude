@@ -245,7 +245,10 @@ class RabbitMQConsumerTest(TestCase):
                 text = await response.text()
 
         self.assertEquals(status_code, 200)
-        self.assertEquals(text, "Bater like a pro! Success rate: 1.0")
+        self.assertEquals(text,
+            '{"message": "Success rate: 1.0 (expect: 0.95)", '
+            '"fail": 0, "success": 1, "status": "ok"}'
+        )
 
         await self.app.shutdown()
 
@@ -271,7 +274,10 @@ class RabbitMQConsumerTest(TestCase):
                 text = await response.text()
 
         self.assertEquals(status_code, 200)
-        self.assertEquals(text, "Bater like a pro! Success rate: 1.0")
+        self.assertEquals(text,
+            '{"message": "Success rate: 1.0 (expect: 0.95)", '
+            '"fail": 0, "success": 1, "status": "ok"}'
+        )
 
         await self.app.shutdown()
 
