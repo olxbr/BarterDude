@@ -238,7 +238,7 @@ class RabbitMQConsumerTest(TestCase):
         self.assertEquals(status_code, 200)
         self.assertEquals(
             text,
-            '{"message": "Success rate: 1.0 (expect: 0.95)", '
+            '{"message": "Success rate: 1.0 (expected: 0.95)", '
             '"fail": 0, "success": 1, "status": "ok"}'
         )
 
@@ -266,7 +266,7 @@ class RabbitMQConsumerTest(TestCase):
         self.assertEquals(status_code, 200)
         self.assertEquals(
             text,
-            '{"message": "Success rate: 1.0 (expect: 0.95)", '
+            '{"message": "Success rate: 1.0 (expected: 0.95)", '
             '"fail": 0, "success": 1, "status": "ok"}'
         )
 

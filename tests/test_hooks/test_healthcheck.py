@@ -36,7 +36,7 @@ class TestHealthcheck(TestCase):
         self.assertEqual(response.content_type, "text/plain")
         self.assertEqual(
             response.body._value.decode('utf-8'),
-            '{"message": "Success rate: 1.0 (expect: 0.9)", '
+            '{"message": "Success rate: 1.0 (expected: 0.9)", '
             '"fail": 0, "success": 1, "status": "ok"}'
         )
 
@@ -49,7 +49,7 @@ class TestHealthcheck(TestCase):
         self.assertEqual(response.content_type, "text/plain")
         self.assertEqual(
             response.body._value.decode('utf-8'),
-            '{"message": "Success rate: 0.9 (expect: 0.9)", '
+            '{"message": "Success rate: 0.9 (expected: 0.9)", '
             '"fail": 1, "success": 9, "status": "ok"}'
         )
 
@@ -60,7 +60,7 @@ class TestHealthcheck(TestCase):
         self.assertEqual(response.content_type, "text/plain")
         self.assertEqual(
             response.body._value.decode('utf-8'),
-            '{"message": "Success rate: 0.0 (expect: 0.9)", '
+            '{"message": "Success rate: 0.0 (expected: 0.9)", '
             '"fail": 1, "success": 0, "status": "fail"}'
         )
 
@@ -72,7 +72,7 @@ class TestHealthcheck(TestCase):
         self.assertEqual(response.content_type, "text/plain")
         self.assertEqual(
             response.body._value.decode('utf-8'),
-            '{"message": "Success rate: 0.5 (expect: 0.9)", '
+            '{"message": "Success rate: 0.5 (expected: 0.9)", '
             '"fail": 1, "success": 1, "status": "fail"}'
         )
 
@@ -96,6 +96,6 @@ class TestHealthcheck(TestCase):
             response = await self.healthcheck(Mock())
             self.assertEqual(
                 response.body._value.decode('utf-8'),
-                '{"message": "Success rate: 0.125 (expect: 0.9)", '
+                '{"message": "Success rate: 0.125 (expected: 0.9)", '
                 '"fail": 7, "success": 1, "status": "fail"}'
             )

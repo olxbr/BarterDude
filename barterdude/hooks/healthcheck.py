@@ -63,7 +63,8 @@ class Healthcheck(HttpHook):
 
         rate = success / (success + fail)
         return self.response(200 if rate >= self.__success_rate else 500, {
-            "message": f"Success rate: {rate} (expect: {self.__success_rate})",
+            "message":
+                f"Success rate: {rate} (expected: {self.__success_rate})",
             "fail": fail,
             "success": success
         })
