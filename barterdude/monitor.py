@@ -43,3 +43,10 @@ class Monitor:
     async def dispatch_on_fail(self, message: RabbitMQMessage,
                                error: Exception):
         await gather(*self._prepare_callbacks("on_fail", message, error))
+
+    async def dispatch_on_connection_fail(
+            self, error: Exception, retries: int
+    ):
+        await gather(*self._prepare_callbacks(
+            "on_connection_fail", error, retries
+        ))

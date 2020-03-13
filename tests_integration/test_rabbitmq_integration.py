@@ -340,3 +340,21 @@ class RabbitMQConsumerTest(TestCase):
         self.assertIn("'delivery_tag': 1", cm.output[1])
         self.assertIn(f"'exception': \"{error_str}\"", cm.output[1])
         self.assertIn("'traceback': [", cm.output[1])
+
+    async def test_fails_to_connect_to_rabbitmq(self):
+        monitor = Monitor(Logging())
+
+        self.app = BarterDude(hostname="invalid_host")
+
+        @self.app.consume_amqp([self.input_queue], monitor)
+        async def handler(message):
+            pass
+
+        await self.app.startup()
+        with self.assertLogs("barterdude") as cm:
+            await asyncio.sleep(2)
+
+        self.assertIn(
+            "{'message': 'Failed to connect to the broker', 'retries': 1,",
+            cm.output[0]
+        )

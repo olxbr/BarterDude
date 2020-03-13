@@ -37,6 +37,17 @@ class TestMonitor(TestCase):
         self.hook1.on_fail.assert_called_with({}, exception)
         self.hook2.on_fail.assert_called_with({}, exception)
 
+    async def test_should_call_hooks_on_connection_fail(self):
+        exception = Mock()
+        retries = Mock()
+        self.hook1.on_connection_fail = CoroutineMock()
+        self.hook2.on_connection_fail = CoroutineMock()
+        await self.monitor.dispatch_on_connection_fail(exception, retries)
+        self.hook1.on_connection_fail.assert_called_once()
+        self.hook2.on_connection_fail.assert_called_once()
+        self.hook1.on_connection_fail.assert_called_with(exception, retries)
+        self.hook2.on_connection_fail.assert_called_with(exception, retries)
+
     @patch("barterdude.monitor.logger")
     @patch("barterdude.monitor.repr")
     @patch("barterdude.monitor.format_tb")

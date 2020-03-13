@@ -30,3 +30,11 @@ class Logging(BaseHook):
             "exception": repr(error),
             "traceback": format_tb(error.__traceback__),
         })
+
+    async def on_connection_fail(self, error: Exception, retries: int):
+        logger.error({
+            "message": "Failed to connect to the broker",
+            "retries": retries,
+            "exception": repr(error),
+            "traceback": format_tb(error.__traceback__),
+        })

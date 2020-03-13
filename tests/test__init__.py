@@ -36,15 +36,18 @@ class TestBarterDude(TestCase):
         self.App.assert_called_once_with(connections=[self.connection])
 
     def test_should_call_route_when_created(self):
+        monitor = Mock()
         self.barterdude.consume_amqp(
-            ["queue"]
+            ["queue"], monitor=monitor
         )(CoroutineMock())
         self.app.route.assert_called_once_with(
             ["queue"],
             type=RouteTypes.AMQP_RABBITMQ,
             options={
                 Options.BULK_SIZE: 10,
-                Options.BULK_FLUSH_INTERVAL: 60
+                Options.BULK_FLUSH_INTERVAL: 60,
+                Options.CONNECTION_FAIL_CALLBACK:
+                    monitor.dispatch_on_connection_fail,
             }
         )
 

@@ -11,12 +11,14 @@ from barterdude.hooks.metrics.prometheus.metrics import Metrics
 class Definitions:
 
     MESSAGE_UNITS = "messages"
+    ERROR_UNITS = "errors"
     TIME_UNITS = "seconds"
     NAMESPACE = "barterdude"
     BEFORE_CONSUME = "before_consume"
     SUCCESS = "success"
     FAIL = "fail"
     TIME_MEASURE = "time_measure"
+    CONNECTION_FAIL = "connection_fail"
 
     def __init__(
         self,
@@ -50,6 +52,11 @@ class Definitions:
             self.TIME_MEASURE,
             namespace=self.NAMESPACE,
             unit=self.TIME_UNITS,
+        )
+        self._prepare_on_connection_fail(
+            self.CONNECTION_FAIL,
+            namespace=self.NAMESPACE,
+            unit=self.ERROR_UNITS,
         )
 
     def _prepare_before_consume(
@@ -89,4 +96,17 @@ class Definitions:
                 namespace=namespace,
                 unit=unit,
                 registry=self.__registry,
+            )
+
+    def _prepare_on_connection_fail(
+            self, state: str, namespace: str, unit: str):
+
+        self.__metrics[state] = Counter(
+                name=f"connection_fail",
+                documentation=("Number of times barterdude failed "
+                               "to connect to the AMQP broker"),
+                labelnames=self.__labelkeys,
+                namespace=namespace,
+                unit=unit,
+                registry=self.__registry
             )

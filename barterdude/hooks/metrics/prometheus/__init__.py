@@ -71,6 +71,11 @@ class Prometheus(HttpHook):
     async def on_fail(self, message: RabbitMQMessage, error: Exception):
         await self._on_complete(message, self.__definitions.FAIL, error)
 
+    async def on_connection_fail(self, error: Exception, retries: int):
+        self.metrics[self.__definitions.CONNECTION_FAIL].labels(
+            **self.__labels
+        ).inc()
+
     async def __call__(self, req: web.Request):
         return web.Response(
             content_type=CONTENT_TYPE_LATEST.split(";")[0],
