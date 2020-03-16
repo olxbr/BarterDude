@@ -25,4 +25,4 @@ check-sec:
 	@bandit -r .
 
 rabbitmq:
-	@docker run --rm --name barterdude_rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3.7.24-management-alpine
+	@docker run -d --rm --name barterdude_rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3.7.24-management-alpine

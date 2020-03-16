@@ -54,6 +54,7 @@ class RabbitMQConsumerTest(TestCase):
         self.app = BarterDude(hostname=self.rabbitmq_host)
 
     async def tearDown(self):
+        await self.app.shutdown()
         await self.queue_manager.connection.channel.queue_delete(
             self.input_queue
         )
@@ -89,8 +90,6 @@ class RabbitMQConsumerTest(TestCase):
         for message in self.messages:
             self.assertTrue(message["key"] in received_messages)
 
-        await self.app.shutdown()
-
     async def test_process_messages_successfully_even_with_crashed_hook(self):
         received_messages = set()
 
@@ -107,8 +106,6 @@ class RabbitMQConsumerTest(TestCase):
 
         for message in self.messages:
             self.assertTrue(message["key"] in received_messages)
-
-        await self.app.shutdown()
 
     async def test_process_one_message_and_publish(self):
         @self.app.consume_amqp([self.input_queue], coroutines=1)
@@ -132,7 +129,6 @@ class RabbitMQConsumerTest(TestCase):
         )
         await asyncio.sleep(1)
         self.assertEquals(received_message, self.messages[1])
-        await self.app.shutdown()
 
     async def test_process_message_requeue_with_requeue(self):
         handler_called = 0
@@ -151,7 +147,6 @@ class RabbitMQConsumerTest(TestCase):
         )
         await asyncio.sleep(1)
         self.assertEquals(handler_called, 2)
-        await self.app.shutdown()
 
     async def test_process_message_reject_with_requeue(self):
         handler_called = 0
@@ -170,7 +165,6 @@ class RabbitMQConsumerTest(TestCase):
         )
         await asyncio.sleep(1)
         self.assertEquals(handler_called, 1)
-        await self.app.shutdown()
 
     async def test_process_message_reject_without_requeue(self):
         handler_called = 0
@@ -188,7 +182,6 @@ class RabbitMQConsumerTest(TestCase):
         )
         await asyncio.sleep(1)
         self.assertEquals(handler_called, 1)
-        await self.app.shutdown()
 
     async def test_process_messages_and_requeue_only_one(self):
         first_read = set()
@@ -221,8 +214,6 @@ class RabbitMQConsumerTest(TestCase):
 
         self.assertSetEqual(second_read, {self.messages[0]["key"]})
 
-        await self.app.shutdown()
-
     async def test_obtains_healthcheck(self):
         monitor = Monitor(Healthcheck(self.app))
 
@@ -245,9 +236,11 @@ class RabbitMQConsumerTest(TestCase):
                 text = await response.text()
 
         self.assertEquals(status_code, 200)
-        self.assertEquals(text, "Bater like a pro! Success rate: 1.0")
-
-        await self.app.shutdown()
+        self.assertEquals(
+            text,
+            '{"message": "Success rate: 1.0 (expected: 0.95)", '
+            '"fail": 0, "success": 1, "status": "ok"}'
+        )
 
     async def test_obtains_healthcheck_even_with_crashed_hook(self):
         monitor = Monitor(ErrorHook(), Healthcheck(self.app))
@@ -271,9 +264,11 @@ class RabbitMQConsumerTest(TestCase):
                 text = await response.text()
 
         self.assertEquals(status_code, 200)
-        self.assertEquals(text, "Bater like a pro! Success rate: 1.0")
-
-        await self.app.shutdown()
+        self.assertEquals(
+            text,
+            '{"message": "Success rate: 1.0 (expected: 0.95)", '
+            '"fail": 0, "success": 1, "status": "ok"}'
+        )
 
     async def test_obtains_prometheus_metrics(self):
         labels = {"app_name": "barterdude_consumer"}
@@ -301,8 +296,6 @@ class RabbitMQConsumerTest(TestCase):
         self.assertNotEquals(-1, text.find(
             'barterdude_received_number_before_consume_messages_total'
             '{app_name="barterdude_consumer"} 1.0'))
-
-        await self.app.shutdown()
 
     async def test_register_multiple_prometheus_hooks(self):
         """This test raised the following error:
@@ -347,5 +340,3 @@ class RabbitMQConsumerTest(TestCase):
         self.assertIn("'delivery_tag': 1", cm.output[1])
         self.assertIn(f"'exception': \"{error_str}\"", cm.output[1])
         self.assertIn("'traceback': [", cm.output[1])
-
-        await self.app.shutdown()
