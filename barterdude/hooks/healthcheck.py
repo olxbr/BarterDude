@@ -27,13 +27,16 @@ class Healthcheck(HttpHook):
         barterdude: BarterDude,
         path: str = "/healthcheck",
         success_rate: float = 0.95,
-        health_window: float = 60.0  # seconds
+        health_window: float = 60.0,  # seconds
+        max_connection_fails: int = 3
     ):
         self.__success_rate = success_rate
         self.__health_window = health_window
         self.__success = deque()
         self.__fail = deque()
         self.__force_fail = False
+        self.__connection_fails = 0
+        self.__max_connection_fails = max_connection_fails
         super(Healthcheck, self).__init__(barterdude, path)
 
     def force_fail(self):
@@ -48,10 +51,21 @@ class Healthcheck(HttpHook):
     async def on_fail(self, message: RabbitMQMessage, error: Exception):
         self.__fail.append(time())
 
+    async def on_connection_fail(self, error: Exception, retries: int):
+        self.__connection_fails = retries
+
     async def __call__(self, req: web.Request):
         if self.__force_fail:
             return _response(500, {
                 "message": "Healthcheck fail called manually"
+            })
+
+        if self.__connection_fails >= self.__max_connection_fails:
+            return _response(500, {
+                "message": (
+                    "Reached max connection fails "
+                    f"({self.__max_connection_fails})"
+                )
             })
 
         old_timestamp = time() - self.__health_window

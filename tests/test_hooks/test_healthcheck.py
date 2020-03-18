@@ -99,3 +99,11 @@ class TestHealthcheck(TestCase):
                 '{"message": "Success rate: 0.125 (expected: 0.9)", '
                 '"fail": 7, "success": 1, "status": "fail"}'
             )
+
+    async def test_should_fail_healthcheck_when_fail_to_connect(self):
+        await self.healthcheck.on_connection_fail(None, 3)
+        response = await self.healthcheck(Mock())
+        self.assertEqual(
+            response.body._value.decode('utf-8'),
+            '{"message": "Reached max connection fails (3)", "status": "fail"}'
+        )

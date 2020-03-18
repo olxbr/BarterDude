@@ -48,3 +48,21 @@ class TestLogging(TestCase):
             "exception": repr.return_value,
             "traceback": format_tb.return_value,
         })
+
+    @patch("barterdude.hooks.logging.logger")
+    @patch("barterdude.hooks.logging.repr")
+    @patch("barterdude.hooks.logging.format_tb")
+    async def test_should_log_on_connection_fail(
+        self, format_tb, repr, logger
+    ):
+        retries = Mock()
+        exception = Exception()
+        await self.logging.on_connection_fail(exception, retries)
+        repr.assert_called_once_with(exception)
+        format_tb.assert_called_once_with(exception.__traceback__)
+        logger.error.assert_called_once_with({
+            "message": "Failed to connect to the broker",
+            "retries": retries,
+            "exception": repr.return_value,
+            "traceback": format_tb.return_value,
+        })

@@ -17,6 +17,10 @@ class BaseHook(metaclass=ABCMeta):
     async def before_consume(self, message: RabbitMQMessage):
         '''Called before consuming the message'''
 
+    @abstractmethod
+    async def on_connection_fail(self, error: Exception, retries: int):
+        '''Called when the consumer fails to connect to the broker'''
+
 
 class HttpHook(BaseHook):
     def __init__(self, barterdude: BarterDude, path: str):
@@ -36,4 +40,7 @@ class HttpHook(BaseHook):
         raise NotImplementedError
 
     async def before_consume(self, message: RabbitMQMessage):
+        raise NotImplementedError
+
+    async def on_connection_fail(self, error: Exception, retries: int):
         raise NotImplementedError

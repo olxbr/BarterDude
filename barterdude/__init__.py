@@ -57,7 +57,9 @@ class BarterDude(MutableMapping):
                 type=RouteTypes.AMQP_RABBITMQ,
                 options={
                     Options.BULK_SIZE: coroutines,
-                    Options.BULK_FLUSH_INTERVAL: bulk_flush_interval
+                    Options.BULK_FLUSH_INTERVAL: bulk_flush_interval,
+                    Options.CONNECTION_FAIL_CALLBACK:
+                        monitor.dispatch_on_connection_fail,
                 }
             )
             async def wrapper(messages: RabbitMQMessage):

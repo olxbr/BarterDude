@@ -31,3 +31,5 @@ class TestHttpHook(TestCase):
             await hook.on_success(None)
         with self.assertRaises(NotImplementedError):
             await hook.on_fail(None, None)
+        with self.assertRaises(NotImplementedError):
+            await hook.on_connection_fail(None, None)

@@ -11,3 +11,6 @@ class ErrorHook(BaseHook):
 
     async def before_consume(self, message: RabbitMQMessage):
         raise NotImplementedError
+
+    async def on_connection_fail(self, error: Exception, retries: int):
+        raise NotImplementedError

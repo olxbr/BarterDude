@@ -139,6 +139,16 @@ class TestPrometheus(TestCase):
             {}
         )
 
+    @patch("barterdude.hooks.metrics.prometheus.Prometheus.metrics")
+    async def test_should_increment_on_connection_fail_counter(self, metrics):
+        counter = Mock()
+        labels = Mock(labels=Mock(return_value=counter))
+        metrics.__getitem__ = Mock(return_value=labels)
+        await self.prometheus.on_connection_fail(Mock(), Mock())
+        self.assertEqual(labels.labels.call_count, 1)
+        labels.labels.assert_called_with(test='my_test')
+        counter.inc.assert_called_once()
+
     def test_should_call_counter(self):
         self.assertTrue(
             isinstance(self.prometheus.metrics.counter(
