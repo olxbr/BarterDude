@@ -9,7 +9,7 @@ class TestLogging(TestCase):
         self.message = Mock()
         self.logging = Logging()
 
-    @patch("barterdude.hooks.logging.logger")
+    @patch("barterdude.hooks.logging.Logging.logger")
     @patch("barterdude.hooks.logging.json.dumps")
     async def test_should_log_before_consume(self, dumps, logger):
         await self.logging.before_consume(self.message)
@@ -20,7 +20,7 @@ class TestLogging(TestCase):
             "message_body": dumps.return_value,
         })
 
-    @patch("barterdude.hooks.logging.logger")
+    @patch("barterdude.hooks.logging.Logging.logger")
     @patch("barterdude.hooks.logging.json.dumps")
     async def test_should_log_on_success(self, dumps, logger):
         await self.logging.on_success(self.message)
@@ -31,7 +31,7 @@ class TestLogging(TestCase):
             "message_body": dumps.return_value,
         })
 
-    @patch("barterdude.hooks.logging.logger")
+    @patch("barterdude.hooks.logging.Logging.logger")
     @patch("barterdude.hooks.logging.json.dumps")
     @patch("barterdude.hooks.logging.repr")
     @patch("barterdude.hooks.logging.format_tb")
@@ -49,7 +49,7 @@ class TestLogging(TestCase):
             "traceback": format_tb.return_value,
         })
 
-    @patch("barterdude.hooks.logging.logger")
+    @patch("barterdude.hooks.logging.Logging.logger")
     @patch("barterdude.hooks.logging.repr")
     @patch("barterdude.hooks.logging.format_tb")
     async def test_should_log_on_connection_fail(

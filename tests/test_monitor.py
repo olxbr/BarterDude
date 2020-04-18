@@ -1,4 +1,4 @@
-from asynctest import TestCase, Mock, CoroutineMock, patch
+from asynctest import TestCase, MagicMock, Mock, CoroutineMock, patch
 from barterdude.monitor import Monitor
 
 
@@ -48,15 +48,15 @@ class TestMonitor(TestCase):
         self.hook1.on_connection_fail.assert_called_with(exception, retries)
         self.hook2.on_connection_fail.assert_called_with(exception, retries)
 
-    @patch("barterdude.monitor.logger")
     @patch("barterdude.monitor.repr")
     @patch("barterdude.monitor.format_tb")
-    async def test_should_log_if_hook_fail(self, format_tb, repr, logger):
+    async def test_should_log_if_hook_fail(self, format_tb, repr):
+        logger = MagicMock()
         exception = Exception()
 
         async def before_consume(msg):
             raise exception
-
+        self.monitor._logger = logger
         self.hook1.before_consume = before_consume
         self.hook2.before_consume = CoroutineMock()
         await self.monitor.dispatch_before_consume({})
