@@ -1,3 +1,4 @@
+import logging
 from asynctest import TestCase, Mock, patch
 from barterdude.hooks.logging import Logging
 
@@ -8,6 +9,20 @@ class TestLogging(TestCase):
     def setUp(self):
         self.message = Mock()
         self.logging = Logging()
+
+    async def test_should_access_logger(self):
+        log = Logging("my_log", logging.DEBUG)
+        logger = log.logger
+        self.assertEqual(
+            type(logger),
+            logging.Logger
+        )
+        self.assertEqual(
+            type(logger.handlers[0]),
+            logging.StreamHandler
+        )
+        self.assertEqual(logger.name, "my_log")
+        self.assertEqual(logger.level, logging.DEBUG)
 
     @patch("barterdude.hooks.logging.Logging.logger")
     @patch("barterdude.hooks.logging.json.dumps")
