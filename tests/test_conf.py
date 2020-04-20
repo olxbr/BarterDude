@@ -2,13 +2,13 @@ import logging
 from pythonjsonlogger import jsonlogger
 
 from asynctest import TestCase
-from barterdude.conf import getLogger
+from barterdude.conf import getLogger, BARTERDUDE_DEFAULT_LOG_NAME
 
 
 class TestConf(TestCase):
 
     def setUp(self):
-        self.log_name = "barterdude"
+        self.log_name = BARTERDUDE_DEFAULT_LOG_NAME
         self.log_level = logging.INFO
 
     async def test_should_get_log_with_default_configs(self):
