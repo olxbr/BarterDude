@@ -1,15 +1,19 @@
 import json
 from traceback import format_tb
-from logging import INFO
 from asyncworker.rabbitmq.message import RabbitMQMessage
 
-from barterdude.conf import getLogger
+from barterdude.conf import (
+    getLogger, BARTERDUDE_DEFAULT_LOG_NAME, BARTERDUDE_DEFAULT_LOG_LEVEL
+)
 from barterdude.hooks import BaseHook
 
 
 class Logging(BaseHook):
 
-    def __init__(self, name="barterdude", level=INFO):
+    def __init__(
+        self, name=BARTERDUDE_DEFAULT_LOG_NAME,
+        level=BARTERDUDE_DEFAULT_LOG_LEVEL
+    ):
         self._logger = getLogger(name, level)
 
     @property
