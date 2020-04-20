@@ -14,12 +14,12 @@ class TestConf(TestCase):
         self.log_level = BARTERDUDE_DEFAULT_LOG_LEVEL
 
     async def test_should_get_log_with_default_configs(self):
-        logger = getLogger()
+        logger = getLogger("test")
         self.assertEqual(
             type(logger.handlers[0]),
             logging.StreamHandler
         )
-        self.assertEqual(logger.name, self.log_name)
+        self.assertEqual(logger.name, f"{self.log_name}.test")
         self.assertEqual(logger.level, self.log_level)
         self.assertEqual(
             type(logger.handlers[0].formatter),
@@ -27,12 +27,12 @@ class TestConf(TestCase):
         )
 
     async def test_should_get_log_with_custom_configs(self):
-        logger = getLogger("test_log", logging.DEBUG)
+        logger = getLogger("test", logging.DEBUG)
         self.assertEqual(
             type(logger.handlers[0]),
             logging.StreamHandler
         )
-        self.assertEqual(logger.name, "test_log")
+        self.assertEqual(logger.name, f"{self.log_name}.test")
         self.assertEqual(logger.level, logging.DEBUG)
         self.assertEqual(
             type(logger.handlers[0].formatter),
@@ -40,18 +40,18 @@ class TestConf(TestCase):
         )
 
     async def test_should_get_log_with_custom_configs_even_called_after(self):
-        logger_first = getLogger()
-        logger = getLogger("test_log", logging.DEBUG)
-        logger_last = getLogger()
+        logger_first = getLogger("test_log")
+        logger = getLogger("test", logging.DEBUG)
+        logger_last = getLogger("test_log")
         self.assertEqual(
             type(logger.handlers[0]),
             logging.StreamHandler
         )
-        self.assertEqual(logger_first.name, self.log_name)
+        self.assertEqual(logger_first.name, f"{self.log_name}.test_log")
         self.assertEqual(logger_first.level, self.log_level)
-        self.assertEqual(logger.name, "test_log")
+        self.assertEqual(logger.name, f"{self.log_name}.test")
         self.assertEqual(logger.level, logging.DEBUG)
-        self.assertEqual(logger_last.name, self.log_name)
+        self.assertEqual(logger_last.name, f"{self.log_name}.test_log")
         self.assertEqual(logger_last.level, self.log_level)
         self.assertEqual(
             type(logger.handlers[0].formatter),

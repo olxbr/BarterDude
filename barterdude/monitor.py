@@ -4,13 +4,14 @@ from typing import Iterable, Callable, Optional, Any
 from asyncio import gather
 from asyncworker.rabbitmq.message import RabbitMQMessage
 
-from barterdude.conf import getLogger
+from barterdude.conf import getLogger, BARTERDUDE_DEFAULT_LOG_LEVEL
 
 
 class Monitor:
     def __init__(self, *hooks: Iterable):
         self.__hooks = hooks
-        self._logger = getLogger()
+        self._logger = getLogger(
+            "hook.monitor", BARTERDUDE_DEFAULT_LOG_LEVEL)
 
     async def _callback(self,
                         method: Callable[[RabbitMQMessage], Optional[Any]],

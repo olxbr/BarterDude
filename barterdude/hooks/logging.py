@@ -3,7 +3,7 @@ from traceback import format_tb
 from asyncworker.rabbitmq.message import RabbitMQMessage
 
 from barterdude.conf import (
-    getLogger, BARTERDUDE_DEFAULT_LOG_NAME, BARTERDUDE_DEFAULT_LOG_LEVEL
+    getLogger, BARTERDUDE_DEFAULT_LOG_LEVEL
 )
 from barterdude.hooks import BaseHook
 
@@ -11,7 +11,7 @@ from barterdude.hooks import BaseHook
 class Logging(BaseHook):
 
     def __init__(
-        self, name=BARTERDUDE_DEFAULT_LOG_NAME,
+        self, name="hook.logging",
         level=BARTERDUDE_DEFAULT_LOG_LEVEL
     ):
         self._logger = getLogger(name, level)
