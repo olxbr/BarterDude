@@ -52,3 +52,5 @@ class TestConf(TestCase):
             type(logger.handlers[0].formatter),
             jsonlogger.JsonFormatter
         )
+        self.assertEqual(len(logger_first.handlers), 1)
+        self.assertEqual(len(logger.handlers), 1)
