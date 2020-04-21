@@ -1,5 +1,7 @@
+import logging
 from asynctest import TestCase, Mock, patch
 from barterdude.hooks.logging import Logging
+from barterdude.conf import BARTERDUDE_DEFAULT_LOG_NAME
 
 
 class TestLogging(TestCase):
@@ -9,7 +11,21 @@ class TestLogging(TestCase):
         self.message = Mock()
         self.logging = Logging()
 
-    @patch("barterdude.hooks.logging.logger")
+    async def test_should_access_logger(self):
+        log = Logging("my_log", logging.DEBUG)
+        logger = log.logger
+        self.assertEqual(
+            type(logger),
+            logging.Logger
+        )
+        self.assertEqual(
+            type(logger.handlers[0]),
+            logging.StreamHandler
+        )
+        self.assertEqual(logger.name, f"{BARTERDUDE_DEFAULT_LOG_NAME}.my_log")
+        self.assertEqual(logger.level, logging.DEBUG)
+
+    @patch("barterdude.hooks.logging.Logging.logger")
     @patch("barterdude.hooks.logging.json.dumps")
     async def test_should_log_before_consume(self, dumps, logger):
         await self.logging.before_consume(self.message)
@@ -20,7 +36,7 @@ class TestLogging(TestCase):
             "message_body": dumps.return_value,
         })
 
-    @patch("barterdude.hooks.logging.logger")
+    @patch("barterdude.hooks.logging.Logging.logger")
     @patch("barterdude.hooks.logging.json.dumps")
     async def test_should_log_on_success(self, dumps, logger):
         await self.logging.on_success(self.message)
@@ -31,7 +47,7 @@ class TestLogging(TestCase):
             "message_body": dumps.return_value,
         })
 
-    @patch("barterdude.hooks.logging.logger")
+    @patch("barterdude.hooks.logging.Logging.logger")
     @patch("barterdude.hooks.logging.json.dumps")
     @patch("barterdude.hooks.logging.repr")
     @patch("barterdude.hooks.logging.format_tb")
@@ -49,7 +65,7 @@ class TestLogging(TestCase):
             "traceback": format_tb.return_value,
         })
 
-    @patch("barterdude.hooks.logging.logger")
+    @patch("barterdude.hooks.logging.Logging.logger")
     @patch("barterdude.hooks.logging.repr")
     @patch("barterdude.hooks.logging.format_tb")
     async def test_should_log_on_connection_fail(
