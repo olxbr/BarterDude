@@ -1,6 +1,7 @@
 from asynctest import Mock, TestCase, CoroutineMock, patch, call
 from asyncworker import Options, RouteTypes
 from barterdude import BarterDude
+from barterdude.message import Message
 
 
 class TestBarterDude(TestCase):
@@ -66,7 +67,11 @@ class TestBarterDude(TestCase):
         self.decorator.assert_called_once()
         wrapper = self.decorator.call_args[0][0]
         await wrapper(self.messages)
-        self.callback.assert_has_calls(self.calls, any_order=True)
+        messages = []
+        for message in self.callback.mock_calls:
+            self.assertEqual(Message, type(message[1][0]))
+            messages.append(message[1][0]._message)
+        self.assertListEqual(messages, self.messages)
 
     async def test_should_call_reject_when_callback_fail(self):
         self.callback.side_effect = Exception('Boom!')

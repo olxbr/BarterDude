@@ -8,7 +8,8 @@ from barterdude.monitor import Monitor
 from barterdude.hooks.healthcheck import Healthcheck
 from barterdude.hooks.logging import Logging
 from barterdude.hooks.metrics.prometheus import Prometheus
-from helpers import ErrorHook
+from barterdude.message import ValidationException
+from tests_integration.helpers import ErrorHook
 from asyncworker.connections import AMQPConnection
 from random import choices
 from string import ascii_uppercase
@@ -51,6 +52,31 @@ class RabbitMQConsumerTest(TestCase):
             message = {"key": "".join(choices(ascii_uppercase, k=16))}
             self.messages.append(message)
 
+        self.schema = {
+            "$schema": "http://json-schema.org/draft-04/schema#",
+            "$id": "http://example.com/example.json",
+            "type": "object",
+            "title": "Message Schema",
+            "description": (
+                "The root schema comprises the entire JSON document."),
+            "additionalProperties": True,
+            "required": [
+                "key"
+            ],
+            "properties": {
+                "key": {
+                    "$id": "#/properties/key",
+                    "type": "string",
+                    "title": "The Key Schema",
+                    "description": (
+                        "An explanation about the purpose of this instance."),
+                    "default": "",
+                    "examples": [
+                        "1"
+                    ]
+                }
+            }
+        }
         self.app = BarterDude(hostname=self.rabbitmq_host)
 
     async def tearDown(self):
@@ -79,6 +105,22 @@ class RabbitMQConsumerTest(TestCase):
         received_messages = set()
 
         @self.app.consume_amqp([self.input_queue], coroutines=1)
+        async def handler(message):
+            nonlocal received_messages
+            received_messages.add(message.body["key"])
+
+        await self.app.startup()
+        await self.send_all_messages()
+        await asyncio.sleep(1)
+
+        for message in self.messages:
+            self.assertTrue(message["key"] in received_messages)
+
+    async def test_process_messages_successfully_with_validation(self):
+        received_messages = set()
+
+        @self.app.consume_amqp(
+            [self.input_queue], coroutines=1, validation_schema=self.schema)
         async def handler(message):
             nonlocal received_messages
             received_messages.add(message.body["key"])
@@ -151,7 +193,9 @@ class RabbitMQConsumerTest(TestCase):
     async def test_process_message_reject_with_requeue(self):
         handler_called = 0
 
-        @self.app.consume_amqp([self.input_queue], requeue_on_fail=False)
+        @self.app.consume_amqp(
+            [self.input_queue], requeue_on_fail=True,
+            bulk_flush_interval=1, coroutines=1)
         async def handler(messages):
             nonlocal handler_called
             handler_called = handler_called + 1
@@ -163,25 +207,84 @@ class RabbitMQConsumerTest(TestCase):
             routing_key=self.input_queue,
             data=self.messages[0]
         )
-        await asyncio.sleep(1)
-        self.assertEquals(handler_called, 1)
+        await asyncio.sleep(2)
+        self.assertEquals(handler_called, 2)
 
-    async def test_process_message_reject_without_requeue(self):
+    async def test_process_message_reject_by_validation_with_requeue(self):
         handler_called = 0
 
-        @self.app.consume_amqp([self.input_queue])
-        async def handler(message):
+        @self.app.consume_amqp(
+            [self.input_queue], requeue_on_validation_fail=True,
+            bulk_flush_interval=1, coroutines=1)
+        async def handler(messages):
             nonlocal handler_called
             handler_called = handler_called + 1
-            message.reject(requeue=False)
+            if handler_called < 2:
+                raise ValidationException()
 
         await self.app.startup()
         await self.queue_manager.put(
             routing_key=self.input_queue,
             data=self.messages[0]
         )
-        await asyncio.sleep(1)
+        await asyncio.sleep(2)
+        self.assertEquals(handler_called, 2)
+
+    async def test_process_message_reject_without_requeue(self):
+        handler_called = 0
+
+        @self.app.consume_amqp(
+            [self.input_queue], requeue_on_fail=False,
+            bulk_flush_interval=1, coroutines=1)
+        async def handler(message):
+            nonlocal handler_called
+            handler_called = handler_called + 1
+            if handler_called < 2:
+                raise Exception()
+
+        await self.app.startup()
+        await self.queue_manager.put(
+            routing_key=self.input_queue,
+            data=self.messages[0]
+        )
+        await asyncio.sleep(2)
         self.assertEquals(handler_called, 1)
+
+    async def test_process_message_reject_by_validation_without_requeue(self):
+        handler_called = 0
+
+        @self.app.consume_amqp(
+            [self.input_queue], requeue_on_validation_fail=False)
+        async def handler(messages):
+            nonlocal handler_called
+            handler_called = handler_called + 1
+            if handler_called < 2:
+                raise ValidationException()
+
+        await self.app.startup()
+        await self.queue_manager.put(
+            routing_key=self.input_queue,
+            data=self.messages[0]
+        )
+        await asyncio.sleep(2)
+        self.assertEquals(handler_called, 1)
+
+    async def test_process_message_reject_by_validation_before_handler(self):
+        handler_called = 0
+
+        @self.app.consume_amqp(
+            [self.input_queue], validation_schema=self.schema)
+        async def handler(messages):
+            nonlocal handler_called
+            handler_called = handler_called + 1
+
+        await self.app.startup()
+        await self.queue_manager.put(
+            routing_key=self.input_queue,
+            data={"wrong": "key"}
+        )
+        await asyncio.sleep(1)
+        self.assertEquals(handler_called, 0)
 
     async def test_process_messages_and_requeue_only_one(self):
         first_read = set()

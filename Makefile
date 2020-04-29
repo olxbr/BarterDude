@@ -10,10 +10,10 @@ lint:
 	@flake8 barterdude tests tests_integration
 
 test:
-	@nosetests --exclude="tests_integration" --with-coverage --cover-erase --cover-package=barterdude
+	@nosetests -s --exclude="tests_integration" --with-coverage --cover-erase --cover-package=barterdude
 
 integration:
-	@nosetests -w tests_integration/
+	@nosetests -s -w tests_integration/
 
 all-tests: test integration lint check-sec
 

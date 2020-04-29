@@ -4,8 +4,9 @@ from asyncworker.options import Options
 from asyncworker.connections import AMQPConnection
 from asyncworker.rabbitmq.message import RabbitMQMessage
 from collections import MutableMapping
-from typing import Iterable
+from typing import Iterable, Optional
 from barterdude.monitor import Monitor
+from barterdude.message import MessageValidation, ValidationException
 
 
 class BarterDude(MutableMapping):
@@ -39,13 +40,20 @@ class BarterDude(MutableMapping):
         monitor: Monitor = Monitor(),
         coroutines: int = 10,
         bulk_flush_interval: float = 60.0,
-        requeue_on_fail: bool = True
+        requeue_on_fail: bool = True,
+        requeue_on_validation_fail: bool = False,
+        validation_schema: Optional[dict] = {}
     ):
+        msg_validation = MessageValidation(validation_schema)
+
         def decorator(f):
             async def process_message(message: RabbitMQMessage):
                 await monitor.dispatch_before_consume(message)
                 try:
-                    await f(message)
+                    await f(msg_validation(message))
+                except ValidationException as error:
+                    await monitor.dispatch_on_fail(message, error)
+                    message.reject(requeue_on_validation_fail)
                 except Exception as error:
                     await monitor.dispatch_on_fail(message, error)
                     message.reject(requeue_on_fail)
