@@ -25,12 +25,14 @@ pip install barterdude[prometheus] # or pip install barterdude[all]
 Build your consumer with this complete example:
 
 ```python
+import logging
 from barterdude import BarterDude
 from barterdude.monitor import Monitor
 from barterdude.hooks.healthcheck import Healthcheck
 from barterdude.hooks.logging import Logging
 from barterdude.hooks.metrics.prometheus import Prometheus
-from asyncworker.rabbitmq.message import RabbitMQMessage
+from barterdude.message import Message
+from barterdude.conf import getLogger
 
 # from my_project import MyHook # (you can build your own hooks)
 
@@ -51,10 +53,14 @@ labels = dict(
 healthcheck = Healthcheck(barterdude) # automatic and customizable healthcheck
 prometheus = Prometheus(barterdude, labels) # automatic and customizable Prometheus integration
 
+self.logger = getLogger("my_app", logging.DEBUG) # automatic json log with barterdude namespace
+# BARTERDUDE_DEFAULT_LOG_NAME is an env var to control log namespace
+# BARTERDUDE_DEFAULT_LOG_LEVEL is an env var to control loglevel by number 0, 10, 20, etc...
+
 monitor = Monitor(
     healthcheck,
     prometheus,
-    # MyHook(barterdude, "/path") # (will make localhost:8080/path url)
+    # MyHook(barterdude, "/path"), # (will make localhost:8080/path url)
     Logging() # automatic and customizable logging
 )
 
@@ -68,12 +74,13 @@ my_metric = prometheus.metrics.counter(name="fail", description="fail again")  #
     bulk_flush_interval = 60.0,  #  max waiting time for messages to start process n_coroutines
     requeue_on_fail = True  # should retry or not the message
 )
-async def your_consumer(msg: RabbitMQMessage): # you receive only one message and we parallelize processing for you
+async def your_consumer(msg: Message): # you receive only one message and we parallelize processing for you
     await barterdude.publish_amqp(
         exchange="my_exchange",
         data=msg.body
     )
     if msg.body == "fail":
+    
         my_metric.inc() # you can use prometheus metrics
         healthcheck.force_fail() # you can use your hooks inside consumer too
         msg.reject(requeue=False) # You can force to reject a message, exactly equal https://b2wdigital.github.io/async-worker/src/asyncworker/asyncworker.rabbitmq.html#asyncworker.rabbitmq.message.RabbitMQMessage
@@ -165,6 +172,48 @@ and get it back in a consumer
 async def consumer_access_storage(msg):
     data = baterdude["my_variable"]
 ```
+
+### Schema Validation
+
+Consumed messages can be validated by json schema draft-04:
+
+```python
+@barterdude.consume_amqp(
+    ["queue1", "queue2"],
+    monitor,
+    validation_schema={
+            "$schema": "http://json-schema.org/draft-04/schema#",
+            "$id": "http://example.com/example.json",
+            "type": "object",
+            "title": "Message Schema",
+            "description": "The root schema comprises the entire JSON document.",
+            "additionalProperties": True,
+            "required": [
+                "key"
+            ],
+            "properties": {
+                "key": {
+                    "$id": "#/properties/key",
+                    "type": "string",
+                    "title": "The Key Schema",
+                    "description": "An explanation about message.",
+                    "default": ""
+                }
+            }
+        },
+    requeue_on_validation_fail=False # invalid messages are removed without requeue
+)
+```
+
+You can still validate messages before produce them or when you want:
+
+```python
+from barterdude.message import MessageValidation
+
+validator = MessageValidation(json_schema)
+validator.validate(message)
+```
+
 
 ### Testing
 

@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Union
 from python_jsonschema_objects.validators import ValidationError
 from python_jsonschema_objects import ObjectBuilder
 from asyncworker.rabbitmq.message import RabbitMQMessage
@@ -6,20 +6,6 @@ from asyncworker.rabbitmq.message import RabbitMQMessage
 
 class ValidationException(ValidationError):
     pass
-
-
-class MessageValidation:
-    def __init__(self, validation_schema: Optional[dict] = {}):
-        self._validate = bool(validation_schema)
-        self._builder = ObjectBuilder(validation_schema)
-
-    def __call__(self, message: RabbitMQMessage):
-        if self._validate:
-            try:
-                self._builder.validate(message.body)
-            except ValidationError as err:
-                raise ValidationException(err)
-        return Message(message)
 
 
 class Message:
@@ -49,3 +35,20 @@ class Message:
 
     async def process_exception(self):
         return await self._message.process_exception()
+
+
+class MessageValidation:
+    def __init__(self, validation_schema: Optional[dict] = {}):
+        self._validate = bool(validation_schema)
+        self._builder = ObjectBuilder(validation_schema)
+
+    def validate(self, message: Union[RabbitMQMessage, Message]):
+        if self._validate:
+            try:
+                self._builder.validate(message.body)
+            except ValidationError as err:
+                raise ValidationException(err)
+
+    def __call__(self, message: RabbitMQMessage):
+        self.validate(message)
+        return Message(message)

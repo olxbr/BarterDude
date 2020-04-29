@@ -64,12 +64,14 @@ class TestMessageValidation(TestCase):
         self.rbmq_message.body = {"wrong": "key"}
         validation = MessageValidation()
         message = validation(self.rbmq_message)
+        validation.validate(message)
         self.assertEqual(self.rbmq_message.body, message.body)
 
     def test_should_return_message_with_validation(self):
         self.rbmq_message.body = {"key": "ok"}
         validation = MessageValidation(self.schema)
         message = validation(self.rbmq_message)
+        validation.validate(message)
         self.assertEqual(self.rbmq_message.body, message.body)
 
     def test_should_raise_error_with_wrong_message(self):
@@ -77,3 +79,5 @@ class TestMessageValidation(TestCase):
         validation = MessageValidation(self.schema)
         with self.assertRaises(ValidationException):
             validation(self.rbmq_message)
+        with self.assertRaises(ValidationException):
+            validation.validate(self.rbmq_message)
