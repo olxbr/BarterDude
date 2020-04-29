@@ -1,0 +1,79 @@
+from asynctest import TestCase, Mock
+from asyncworker.rabbitmq.message import RabbitMQMessage
+from barterdude.message import Message, MessageValidation, ValidationException
+
+
+class TestMessage(TestCase):
+    def test_should_convert_rabbitmq_message_to_message(self):
+        rbmq_message = RabbitMQMessage(1, Mock())
+        message = Message(rbmq_message)
+        self.assertEqual(message.body, rbmq_message.body)
+        self.assertEqual(
+            message.properties, rbmq_message._amqp_message._properties)
+        self.assertEqual(message.raw, rbmq_message.serialized_data)
+
+    async def test_should_call_rbmq_methods(self):
+        rbmq_message = Mock(RabbitMQMessage)
+        message = Message(rbmq_message)
+        message.reject()
+        rbmq_message.reject.assert_called_once_with(True)
+        rbmq_message.reset_mock()
+        message.reject(False)
+        rbmq_message.reject.assert_called_once_with(False)
+        rbmq_message.reset_mock()
+        message.accept()
+        rbmq_message.accept.assert_called_once_with()
+        rbmq_message.reset_mock()
+        await message.process_success()
+        rbmq_message.process_success.assert_awaited_with()
+        rbmq_message.reset_mock()
+        await message.process_exception()
+        rbmq_message.process_exception.assert_awaited_with()
+
+
+class TestMessageValidation(TestCase):
+    def setUp(self):
+        self.schema = {
+            "$schema": "http://json-schema.org/draft-04/schema#",
+            "$id": "http://example.com/example.json",
+            "type": "object",
+            "title": "Message Schema",
+            "description": (
+                "The root schema comprises the entire JSON document."),
+            "additionalProperties": True,
+            "required": [
+                "key"
+            ],
+            "properties": {
+                "key": {
+                    "$id": "#/properties/key",
+                    "type": "string",
+                    "title": "The Key Schema",
+                    "description": (
+                        "An explanation about the purpose of this instance."),
+                    "default": "",
+                    "examples": [
+                        "1"
+                    ]
+                }
+            }
+        }
+        self.rbmq_message = Mock(RabbitMQMessage)
+
+    def test_should_return_without_validation_even_wrong(self):
+        self.rbmq_message.body = {"wrong": "key"}
+        validation = MessageValidation()
+        message = validation(self.rbmq_message)
+        self.assertEqual(self.rbmq_message.body, message.body)
+
+    def test_should_return_message_with_validation(self):
+        self.rbmq_message.body = {"key": "ok"}
+        validation = MessageValidation(self.schema)
+        message = validation(self.rbmq_message)
+        self.assertEqual(self.rbmq_message.body, message.body)
+
+    def test_should_raise_error_with_wrong_message(self):
+        self.rbmq_message.body = {"wrong": "key"}
+        validation = MessageValidation(self.schema)
+        with self.assertRaises(ValidationException):
+            validation(self.rbmq_message)

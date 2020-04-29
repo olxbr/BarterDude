@@ -9,7 +9,7 @@ class ValidationException(ValidationError):
 
 
 class MessageValidation:
-    def __init__(self, validation_schema: Optional[dict]):
+    def __init__(self, validation_schema: Optional[dict] = {}):
         self._validate = bool(validation_schema)
         self._builder = ObjectBuilder(validation_schema)
 

@@ -23,7 +23,31 @@ class TestBarterDude(TestCase):
         self.app.startup = CoroutineMock()
         self.app.shutdown = CoroutineMock()
         self.decorator = self.app.route.return_value
-
+        self.schema = {
+            "$schema": "http://json-schema.org/draft-04/schema#",
+            "$id": "http://example.com/example.json",
+            "type": "object",
+            "title": "Message Schema",
+            "description": (
+                "The root schema comprises the entire JSON document."),
+            "additionalProperties": True,
+            "required": [
+                "key"
+            ],
+            "properties": {
+                "key": {
+                    "$id": "#/properties/key",
+                    "type": "string",
+                    "title": "The Key Schema",
+                    "description": (
+                        "An explanation about the purpose of this instance."),
+                    "default": "",
+                    "examples": [
+                        "1"
+                    ]
+                }
+            }
+        }
         self.barterdude = BarterDude()
 
     def test_should_create_connection(self):
@@ -90,6 +114,32 @@ class TestBarterDude(TestCase):
         self.monitor.dispatch_on_success.assert_has_calls(
             self.calls, any_order=True)
         self.monitor.dispatch_on_fail.assert_not_called()
+
+    async def test_should_call_callback_for_valid_message(self):
+        self.barterdude.consume_amqp(
+            ["queue"], self.monitor, validation_schema=self.schema
+        )(self.callback)
+        self.decorator.assert_called_once()
+        wrapper = self.decorator.call_args[0][0]
+        message = Mock(Message)
+        message.body = {"key": 'ok'}
+        await wrapper([message])
+        self.callback.assert_called_once()
+        self.assertEqual(
+            self.callback.await_args[0][0].body,
+            message.body
+        )
+
+    async def test_should_not_call_callback_for_valid_message(self):
+        self.barterdude.consume_amqp(
+            ["queue"], self.monitor, validation_schema=self.schema
+        )(self.callback)
+        self.decorator.assert_called_once()
+        wrapper = self.decorator.call_args[0][0]
+        message = Mock(Message)
+        message.body = {"wrong": 'ok'}
+        await wrapper([message])
+        self.callback.assert_not_called()
 
     async def test_should_call_monitor_for_each_fail_message(self):
         error = Exception('Boom!')
