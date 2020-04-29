@@ -13,7 +13,11 @@ class TestBarterDude(TestCase):
         self.monitor.dispatch_on_success = CoroutineMock()
         self.monitor.dispatch_on_fail = CoroutineMock()
         self.callback = CoroutineMock()
-        self.messages = [Mock() for _ in range(10)]
+        self.messages = []
+        for i in range(10):
+            mock = Mock()
+            mock.value = i
+            self.messages.append(mock)
         self.calls = [call(message) for message in self.messages]
 
         self.AMQPConnection = AMQPConnection
@@ -95,7 +99,9 @@ class TestBarterDude(TestCase):
         for message in self.callback.mock_calls:
             self.assertEqual(Message, type(message[1][0]))
             messages.append(message[1][0]._message)
-        self.assertListEqual(messages, self.messages)
+        self.assertListEqual(
+            sorted(messages, key=lambda x: x.value),
+            sorted(self.messages, key=lambda x: x.value))
 
     async def test_should_call_reject_when_callback_fail(self):
         self.callback.side_effect = Exception('Boom!')
