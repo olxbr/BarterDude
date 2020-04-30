@@ -1,6 +1,7 @@
 from asynctest import TestCase, Mock
 from asyncworker.rabbitmq.message import RabbitMQMessage
-from barterdude.message import Message, MessageValidation, ValidationException
+from barterdude.message import (
+    Message, MessageBody, MessageValidation, ValidationException)
 from tests_unit.helpers import load_fixture
 
 
@@ -30,6 +31,18 @@ class TestMessage(TestCase):
         rbmq_message.reset_mock()
         await message.process_exception()
         rbmq_message.process_exception.assert_awaited_with()
+
+
+class TestMessageBody(TestCase):
+    def test_should_convert_to_class(self):
+        test_message = {"key": "value"}
+        message = MessageBody(**test_message)
+        self.assertEqual(test_message["key"], message.key)
+
+    def test_should_persist_dict_notation(self):
+        test_message = {"key": "value"}
+        message = MessageBody(**test_message)
+        self.assertEqual(message["key"], message.key)
 
 
 class TestMessageValidation(TestCase):
