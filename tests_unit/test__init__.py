@@ -2,6 +2,7 @@ from asynctest import Mock, TestCase, CoroutineMock, patch, call
 from asyncworker import Options, RouteTypes
 from barterdude import BarterDude
 from barterdude.message import Message
+from tests_unit.helpers import load_fixture
 
 
 class TestBarterDude(TestCase):
@@ -23,31 +24,7 @@ class TestBarterDude(TestCase):
         self.app.startup = CoroutineMock()
         self.app.shutdown = CoroutineMock()
         self.decorator = self.app.route.return_value
-        self.schema = {
-            "$schema": "http://json-schema.org/draft-04/schema#",
-            "$id": "http://example.com/example.json",
-            "type": "object",
-            "title": "Message Schema",
-            "description": (
-                "The root schema comprises the entire JSON document."),
-            "additionalProperties": True,
-            "required": [
-                "key"
-            ],
-            "properties": {
-                "key": {
-                    "$id": "#/properties/key",
-                    "type": "string",
-                    "title": "The Key Schema",
-                    "description": (
-                        "An explanation about the purpose of this instance."),
-                    "default": "",
-                    "examples": [
-                        "1"
-                    ]
-                }
-            }
-        }
+        self.schema = load_fixture("schema.json")
         self.barterdude = BarterDude()
 
     def test_should_create_connection(self):

@@ -13,9 +13,9 @@ test:
 	@nosetests -s --exclude="tests_integration" --with-coverage --cover-erase --cover-package=barterdude
 
 integration:
-	@nosetests -s -w tests_integration/
+	@nosetests -s --exclude="tests_unit"
 
-all-tests: test integration lint check-sec
+all-tests: | test integration lint check-sec
 
 all-tests-container:
 	@docker-compose run --rm barterdude make all-tests

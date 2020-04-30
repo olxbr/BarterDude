@@ -1,6 +1,7 @@
 from asynctest import TestCase, Mock
 from asyncworker.rabbitmq.message import RabbitMQMessage
 from barterdude.message import Message, MessageValidation, ValidationException
+from tests_unit.helpers import load_fixture
 
 
 class TestMessage(TestCase):
@@ -33,31 +34,7 @@ class TestMessage(TestCase):
 
 class TestMessageValidation(TestCase):
     def setUp(self):
-        self.schema = {
-            "$schema": "http://json-schema.org/draft-04/schema#",
-            "$id": "http://example.com/example.json",
-            "type": "object",
-            "title": "Message Schema",
-            "description": (
-                "The root schema comprises the entire JSON document."),
-            "additionalProperties": True,
-            "required": [
-                "key"
-            ],
-            "properties": {
-                "key": {
-                    "$id": "#/properties/key",
-                    "type": "string",
-                    "title": "The Key Schema",
-                    "description": (
-                        "An explanation about the purpose of this instance."),
-                    "default": "",
-                    "examples": [
-                        "1"
-                    ]
-                }
-            }
-        }
+        self.schema = load_fixture("schema.json")
         self.rbmq_message = Mock(RabbitMQMessage)
 
     def test_should_return_without_validation_even_wrong(self):
