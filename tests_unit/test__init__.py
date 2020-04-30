@@ -105,8 +105,8 @@ class TestBarterDude(TestCase):
         await wrapper([message])
         self.callback.assert_called_once()
         self.assertEqual(
-            self.callback.await_args[0][0].body,
-            message.body
+            self.callback.await_args[0][0].body.key,
+            message.body["key"]
         )
 
     async def test_should_not_call_callback_for_valid_message(self):

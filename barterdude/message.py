@@ -8,13 +8,23 @@ class ValidationException(ValidationError):
     pass
 
 
+class MessageBody(dict):
+    def __init__(self, **entries):
+        self.__dict__.update(entries)
+        super(MessageBody, self).__init__(**entries)
+
+
 class Message:
     def __init__(self, message: RabbitMQMessage):
         self._message = message
+        if type(message.body) == dict:
+            self._body = MessageBody(**message.body)
+        else:
+            self._body = message.body
 
     @property
     def body(self):
-        return self._message.body
+        return self._body
 
     @property
     def raw(self):
