@@ -32,6 +32,20 @@ class TestMessage(TestCase):
         await message.process_exception()
         rbmq_message.process_exception.assert_awaited_with()
 
+    def test_should_work_with_dict(self):
+        test_message = {"key": "value"}
+        rbmq_message = Mock(RabbitMQMessage)
+        rbmq_message.body = test_message
+        message = Message(rbmq_message)
+        self.assertEqual(message.body, test_message)
+
+    def test_should_work_with_no_dict(self):
+        test_message = "value"
+        rbmq_message = Mock(RabbitMQMessage)
+        rbmq_message.body = test_message
+        message = Message(rbmq_message)
+        self.assertEqual(message.body, test_message)
+
 
 class TestMessageBody(TestCase):
     def test_should_convert_to_class(self):
