@@ -10,12 +10,12 @@ lint:
 	@flake8 barterdude tests tests_integration
 
 test:
-	@nosetests --exclude="tests_integration" --with-coverage --cover-erase --cover-package=barterdude
+	@nosetests -s --exclude="tests_integration" --with-coverage --cover-erase --cover-package=barterdude
 
 integration:
-	@nosetests -w tests_integration/
+	@nosetests -s --exclude="tests_unit"
 
-all-tests: test integration lint check-sec
+all-tests: | test integration lint check-sec
 
 all-tests-container:
 	@docker-compose run --rm barterdude make all-tests

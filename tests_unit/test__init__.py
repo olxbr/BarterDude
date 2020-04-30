@@ -1,6 +1,8 @@
 from asynctest import Mock, TestCase, CoroutineMock, patch, call
 from asyncworker import Options, RouteTypes
 from barterdude import BarterDude
+from barterdude.message import Message
+from tests_unit.helpers import load_fixture
 
 
 class TestBarterDude(TestCase):
@@ -12,7 +14,7 @@ class TestBarterDude(TestCase):
         self.monitor.dispatch_on_success = CoroutineMock()
         self.monitor.dispatch_on_fail = CoroutineMock()
         self.callback = CoroutineMock()
-        self.messages = [Mock() for _ in range(10)]
+        self.messages = [Mock(value=i) for i in range(10)]
         self.calls = [call(message) for message in self.messages]
 
         self.AMQPConnection = AMQPConnection
@@ -22,7 +24,7 @@ class TestBarterDude(TestCase):
         self.app.startup = CoroutineMock()
         self.app.shutdown = CoroutineMock()
         self.decorator = self.app.route.return_value
-
+        self.schema = load_fixture("schema.json")
         self.barterdude = BarterDude()
 
     def test_should_create_connection(self):
@@ -66,7 +68,13 @@ class TestBarterDude(TestCase):
         self.decorator.assert_called_once()
         wrapper = self.decorator.call_args[0][0]
         await wrapper(self.messages)
-        self.callback.assert_has_calls(self.calls, any_order=True)
+        messages = []
+        for message in self.callback.mock_calls:
+            self.assertEqual(Message, type(message[1][0]))
+            messages.append(message[1][0]._message)
+        self.assertListEqual(
+            sorted(messages, key=lambda x: x.value),
+            sorted(self.messages, key=lambda x: x.value))
 
     async def test_should_call_reject_when_callback_fail(self):
         self.callback.side_effect = Exception('Boom!')
@@ -85,6 +93,32 @@ class TestBarterDude(TestCase):
         self.monitor.dispatch_on_success.assert_has_calls(
             self.calls, any_order=True)
         self.monitor.dispatch_on_fail.assert_not_called()
+
+    async def test_should_call_callback_for_valid_message(self):
+        self.barterdude.consume_amqp(
+            ["queue"], self.monitor, validation_schema=self.schema
+        )(self.callback)
+        self.decorator.assert_called_once()
+        wrapper = self.decorator.call_args[0][0]
+        message = Mock(Message)
+        message.body = {"key": 'ok'}
+        await wrapper([message])
+        self.callback.assert_called_once()
+        self.assertEqual(
+            self.callback.await_args[0][0].body,
+            message.body
+        )
+
+    async def test_should_not_call_callback_for_valid_message(self):
+        self.barterdude.consume_amqp(
+            ["queue"], self.monitor, validation_schema=self.schema
+        )(self.callback)
+        self.decorator.assert_called_once()
+        wrapper = self.decorator.call_args[0][0]
+        message = Mock(Message)
+        message.body = {"wrong": 'ok'}
+        await wrapper([message])
+        self.callback.assert_not_called()
 
     async def test_should_call_monitor_for_each_fail_message(self):
         error = Exception('Boom!')
