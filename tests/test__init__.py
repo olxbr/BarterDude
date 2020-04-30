@@ -13,11 +13,7 @@ class TestBarterDude(TestCase):
         self.monitor.dispatch_on_success = CoroutineMock()
         self.monitor.dispatch_on_fail = CoroutineMock()
         self.callback = CoroutineMock()
-        self.messages = []
-        for i in range(10):
-            mock = Mock()
-            mock.value = i
-            self.messages.append(mock)
+        self.messages = [Mock(value=i) for i in range(10)]
         self.calls = [call(message) for message in self.messages]
 
         self.AMQPConnection = AMQPConnection
