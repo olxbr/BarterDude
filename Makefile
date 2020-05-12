@@ -7,7 +7,7 @@ setup: install
 	@pip install -r requirements/requirements_test.txt
 
 lint:
-	@flake8 barterdude tests tests_integration
+	@flake8 barterdude tests_unit tests_integration
 
 test:
 	@nosetests -s --exclude="tests_integration" --with-coverage --cover-erase --cover-package=barterdude
