@@ -1,30 +1,20 @@
+import jsonschema
+from functools import partial
 from typing import Optional, Union
-from python_jsonschema_objects.validators import ValidationError
-from python_jsonschema_objects import ObjectBuilder
 from asyncworker.rabbitmq.message import RabbitMQMessage
 
 
-class ValidationException(ValidationError):
+class ValidationException(jsonschema.ValidationError):
     pass
-
-
-class MessageBody(dict):
-    def __init__(self, **entries):
-        self.__dict__.update(entries)
-        super(MessageBody, self).__init__(**entries)
 
 
 class Message:
     def __init__(self, message: RabbitMQMessage):
         self._message = message
-        if type(message.body) == dict:
-            self._body = MessageBody(**message.body)
-        else:
-            self._body = message.body
 
     @property
     def body(self):
-        return self._body
+        return self._message.body
 
     @property
     def raw(self):
@@ -50,13 +40,18 @@ class Message:
 class MessageValidation:
     def __init__(self, validation_schema: Optional[dict] = {}):
         self._validate = bool(validation_schema)
-        self._builder = ObjectBuilder(validation_schema)
+        resolver = jsonschema.RefResolver.from_schema(validation_schema)
+        self._builder = partial(
+            jsonschema.validate,
+            schema=validation_schema,
+            resolver=resolver
+        )
 
     def validate(self, message: Union[RabbitMQMessage, Message]):
         if self._validate:
             try:
-                self._builder.validate(message.body)
-            except ValidationError as err:
+                self._builder(message.body)
+            except jsonschema.ValidationError as err:
                 raise ValidationException(err)
 
     def __call__(self, message: RabbitMQMessage):
