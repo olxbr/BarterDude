@@ -12,6 +12,8 @@ class TestMessage(TestCase):
         self.assertEqual(message.body, rbmq_message.body)
         self.assertEqual(
             message.properties, rbmq_message._amqp_message._properties)
+        self.assertEqual(
+            message.queue_name, rbmq_message._amqp_message.queue_name)
         self.assertEqual(message.raw, rbmq_message.serialized_data)
 
     async def test_should_call_rbmq_methods(self):

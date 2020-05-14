@@ -114,8 +114,9 @@ class RabbitMQConsumerTest(TestCase):
         received_messages = set()
 
         monitor = Monitor(ErrorHook())
-        @self.app.consume_amqp([self.input_queue], coroutines=1,
-                               monitor=monitor)
+
+        @self.app.consume_amqp(
+            [self.input_queue], coroutines=1, monitor=monitor)
         async def handler(message):
             nonlocal received_messages
             received_messages.add(message.body["key"])

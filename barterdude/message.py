@@ -21,6 +21,10 @@ class Message:
         return self._message.serialized_data
 
     @property
+    def queue_name(self):
+        return self._message._amqp_message.queue_name
+
+    @property
     def properties(self):
         return self._message._amqp_message._properties
 

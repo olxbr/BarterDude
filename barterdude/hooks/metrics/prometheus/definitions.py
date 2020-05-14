@@ -102,7 +102,7 @@ class Definitions:
             self, state: str, namespace: str, unit: str):
 
         self.__metrics[state] = Counter(
-                name=f"connection_fail",
+                name="connection_fail",
                 documentation=("Number of times barterdude failed "
                                "to connect to the AMQP broker"),
                 labelnames=self.__labelkeys,
