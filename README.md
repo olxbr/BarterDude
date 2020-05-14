@@ -175,7 +175,7 @@ async def consumer_access_storage(msg):
 
 ### Schema Validation
 
-Consumed messages can be validated by json schema draft-04:
+Consumed messages can be validated by json schema:
 
 ```python
 @barterdude.consume_amqp(

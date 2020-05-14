@@ -105,7 +105,7 @@ class TestBarterDude(TestCase):
         await wrapper([message])
         self.callback.assert_called_once()
         self.assertEqual(
-            self.callback.await_args[0][0].body.key,
+            self.callback.await_args[0][0].body["key"],
             message.body["key"]
         )
 
