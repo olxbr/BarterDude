@@ -221,9 +221,9 @@ Barterdude takes in account GDPR data protection and by default doesn't log mess
 - Set environment variable `BARTERDUDE_LOG_REDACTED=1`
 - Enable log debug or lower setting environment variable `BARTERDUDE_DEFAULT_LOG_LEVEL=10`
 
-Now messages will be in log by logging hook.
+Now messages will be in log by Logging hook.
 
-This configuration just control BarterDude default log and not act on user custom log.
+This configuration just controls BarterDude's default log and not on user custom log.
 
 ### Testing
 
