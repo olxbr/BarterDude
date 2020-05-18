@@ -214,6 +214,16 @@ validator = MessageValidation(json_schema)
 validator.validate(message)
 ```
 
+### Data Protection
+
+Barterdude takes in account GDPR data protection and by default doesn't log message content, but you can activate it following these steps:
+
+- Set environment variable `BARTERDUDE_LOG_REDACTED=1`
+- Enable log debug or lower setting environment variable `BARTERDUDE_DEFAULT_LOG_LEVEL=10`
+
+Now messages will be in log by logging hook.
+
+This configuration just control BarterDude default log and not act on user custom log.
 
 ### Testing
 
