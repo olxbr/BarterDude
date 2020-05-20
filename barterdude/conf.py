@@ -11,7 +11,7 @@ BARTERDUDE_DEFAULT_LOG_LEVEL = int(
     )
 )
 BARTERDUDE_LOG_REDACTED = bool(os.environ.get(
-    "BARTERDUDE_LOG_REDACTED", "0"
+    "BARTERDUDE_LOG_REDACTED", "1"
 ))
 handler = logging.StreamHandler()
 handler.setFormatter(jsonlogger.JsonFormatter(
