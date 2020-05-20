@@ -56,7 +56,6 @@ class TestLoggingNotRedacted(TestCase):
     @patch("barterdude.hooks.logging.Logging.logger")
     @patch("barterdude.hooks.logging.json.dumps")
     async def test_should_log_before_consume(self, dumps, logger):
-        logger.isEnabledFor = Mock(return_value=True)
         await self.logging.before_consume(self.message)
         dumps.assert_called_once_with(self.message.body)
         logger.info.assert_called_once_with({
@@ -67,22 +66,7 @@ class TestLoggingNotRedacted(TestCase):
 
     @patch("barterdude.hooks.logging.Logging.logger")
     @patch("barterdude.hooks.logging.json.dumps")
-    async def test_should_log_before_consume_adding_redact(
-            self, dumps, logger):
-        hook_log.BARTERDUDE_LOG_REDACTED = True
-        self.logging = hook_log.Logging()
-        logger.isEnabledFor = Mock(return_value=True)
-        await self.logging.before_consume(self.message)
-        dumps.assert_not_called()
-        logger.info.assert_called_once_with({
-            "message": "Before consume message",
-            "delivery_tag": self.message._delivery_tag
-        })
-
-    @patch("barterdude.hooks.logging.Logging.logger")
-    @patch("barterdude.hooks.logging.json.dumps")
     async def test_should_log_on_success(self, dumps, logger):
-        logger.isEnabledFor = Mock(return_value=True)
         await self.logging.on_success(self.message)
         dumps.assert_called_once_with(self.message.body)
         logger.info.assert_called_once_with({
@@ -97,7 +81,6 @@ class TestLoggingNotRedacted(TestCase):
     @patch("barterdude.hooks.logging.format_tb")
     async def test_should_log_on_fail(self, format_tb, repr, dumps, logger):
         exception = Exception()
-        logger.isEnabledFor = Mock(return_value=True)
         await self.logging.on_fail(self.message, exception)
         dumps.assert_called_once_with(self.message.body)
         repr.assert_called_once_with(exception)
@@ -122,21 +105,6 @@ class TestLoggingRedacted(TestCase):
     @patch("barterdude.hooks.logging.Logging.logger")
     @patch("barterdude.hooks.logging.json.dumps")
     async def test_should_log_before_consume(self, dumps, logger):
-        logger.isEnabledFor = Mock(return_value=False)
-        await self.logging.before_consume(self.message)
-        dumps.assert_not_called()
-        logger.info.assert_called_once_with({
-            "message": "Before consume message",
-            "delivery_tag": self.message._delivery_tag
-        })
-
-    @patch("barterdude.hooks.logging.Logging.logger")
-    @patch("barterdude.hooks.logging.json.dumps")
-    async def test_should_log_before_consume_removing_loglevel(
-            self, dumps, logger):
-        hook_log.BARTERDUDE_LOG_REDACTED = False
-        self.logging = hook_log.Logging()
-        logger.isEnabledFor = Mock(return_value=False)
         await self.logging.before_consume(self.message)
         dumps.assert_not_called()
         logger.info.assert_called_once_with({
@@ -147,7 +115,6 @@ class TestLoggingRedacted(TestCase):
     @patch("barterdude.hooks.logging.Logging.logger")
     @patch("barterdude.hooks.logging.json.dumps")
     async def test_should_log_on_success(self, dumps, logger):
-        logger.isEnabledFor = Mock(return_value=False)
         await self.logging.on_success(self.message)
         dumps.assert_not_called()
         logger.info.assert_called_once_with({
@@ -160,7 +127,6 @@ class TestLoggingRedacted(TestCase):
     @patch("barterdude.hooks.logging.repr")
     @patch("barterdude.hooks.logging.format_tb")
     async def test_should_log_on_fail(self, format_tb, repr, dumps, logger):
-        logger.isEnabledFor = Mock(return_value=False)
         exception = Exception()
         await self.logging.on_fail(self.message, exception)
         dumps.assert_not_called()

@@ -1,7 +1,6 @@
 import os
 import aiohttp
 import asyncio
-import logging
 
 from asynctest import TestCase
 from barterdude import BarterDude
@@ -164,7 +163,7 @@ class TestBarterDude(TestCase):
 
     async def test_print_logs_redacted(self):
         hook_logging.BARTERDUDE_LOG_REDACTED = True
-        monitor = Monitor(hook_logging.Logging(level=logging.INFO))
+        monitor = Monitor(hook_logging.Logging())
         error = Exception("raise expected")
 
         @self.app.consume_amqp([self.input_queue], monitor)
@@ -200,7 +199,7 @@ class TestBarterDude(TestCase):
 
     async def test_print_logs(self):
         hook_logging.BARTERDUDE_LOG_REDACTED = False
-        monitor = Monitor(hook_logging.Logging(level=logging.DEBUG))
+        monitor = Monitor(hook_logging.Logging())
         error = Exception("raise expected")
 
         @self.app.consume_amqp([self.input_queue], monitor)

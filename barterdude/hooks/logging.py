@@ -1,5 +1,4 @@
 import json
-import logging
 from traceback import format_tb
 from asyncworker.rabbitmq.message import RabbitMQMessage
 
@@ -25,8 +24,7 @@ class Logging(BaseHook):
 
     def _add_message_body(
             self, log_message: dict, message: RabbitMQMessage) -> dict:
-        if not BARTERDUDE_LOG_REDACTED and self.logger.isEnabledFor(
-                logging.DEBUG):
+        if not BARTERDUDE_LOG_REDACTED:
             log_message["message_body"] = json.dumps(message.body)
         return log_message
 
