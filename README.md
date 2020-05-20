@@ -216,9 +216,9 @@ validator.validate(message)
 
 ### Data Protection
 
-Barterdude takes in account GDPR data protection and by default doesn't log message body, but you can activate enabling environment variable `BARTERDUDE_LOG_REDACTED=1`
+Barterdude takes in account GDPR data protection and by default doesn't log message body, but you can deactivate with environment variable `BARTERDUDE_LOG_REDACTED=0`
 
-Now messages will be not in log by Logging hook.
+Now messages body will be logged by Logging hook.
 
 This configuration just controls BarterDude's default Logging Hook and doesn't have effect on user custom user log. If you want to control your log with this configuration use:
 
