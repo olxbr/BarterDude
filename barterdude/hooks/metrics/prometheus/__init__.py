@@ -24,7 +24,7 @@ class Prometheus(HttpHook):
     def __init__(
         self,
         barterdude: BarterDude,
-        labels: dict,
+        labels: dict = {},
         path: str = "/metrics",
         registry: CollectorRegistry = None
     ):
