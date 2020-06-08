@@ -8,6 +8,7 @@ from barterdude.monitor import Monitor
 from barterdude.hooks.healthcheck import Healthcheck
 from barterdude.hooks import logging as hook_logging
 from barterdude.hooks.metrics.prometheus import Prometheus
+from barterdude.conf import BARTERDUDE_DEFAULT_APP_NAME
 from tests_unit.helpers import load_fixture
 from tests_integration.helpers import ErrorHook
 from asyncworker.connections import AMQPConnection
@@ -90,8 +91,8 @@ class TestBarterDude(TestCase):
                 status_code = response.status
                 text = await response.text()
 
-        self.assertEquals(status_code, 200)
-        self.assertEquals(
+        self.assertEqual(status_code, 200)
+        self.assertEqual(
             text,
             '{"message": "Success rate: 1.0 (expected: 0.95)", '
             '"fail": 0, "success": 1, "status": "ok"}'
@@ -118,8 +119,8 @@ class TestBarterDude(TestCase):
                 status_code = response.status
                 text = await response.text()
 
-        self.assertEquals(status_code, 200)
-        self.assertEquals(
+        self.assertEqual(status_code, 200)
+        self.assertEqual(
             text,
             '{"message": "Success rate: 1.0 (expected: 0.95)", '
             '"fail": 0, "success": 1, "status": "ok"}'
@@ -147,10 +148,54 @@ class TestBarterDude(TestCase):
                 status_code = response.status
                 text = await response.text()
 
-        self.assertEquals(status_code, 200)
-        self.assertNotEquals(-1, text.find(
+        self.assertEqual(status_code, 200)
+        self.assertNotEqual(-1, text.find(
             'barterdude_received_number_before_consume_messages_total'
             '{app_name="barterdude_consumer"} 1.0'))
+        self.assertNotEqual(-1, text.find(
+            'barterdude_processing_message_seconds_bucket{app_name='
+            '"barterdude_consumer",error="",le="0.025",state="success"} 1.0'
+        ))
+        self.assertNotEqual(-1, text.find(
+            'barterdude_processing_message_seconds_count'
+            '{app_name="barterdude_consumer",error="",state="success"} 1.0'
+        ))
+
+    async def test_obtains_prometheus_metrics_without_labels(self):
+        monitor = Monitor(Prometheus(self.app))
+
+        @self.app.consume_amqp([self.input_queue], monitor)
+        async def handler(message):
+            pass
+
+        await self.app.startup()
+        await self.queue_manager.put(
+            routing_key=self.input_queue,
+            data=self.messages[0]
+        )
+        await asyncio.sleep(1)
+
+        async with aiohttp.ClientSession() as session:
+            timeout = aiohttp.ClientTimeout(total=1)
+            url = f'http://{self.barterdude_host}:8080/metrics'
+            async with session.get(url, timeout=timeout) as response:
+                status_code = response.status
+                text = await response.text()
+
+        self.assertEqual(status_code, 200)
+        name = BARTERDUDE_DEFAULT_APP_NAME
+        self.assertNotEqual(-1, text.find(
+            'barterdude_received_number_before_consume_messages_total'
+            '{application="%s"} 1.0' % name
+        ))
+        self.assertNotEqual(-1, text.find(
+            'barterdude_processing_message_seconds_bucket'
+            '{application="%s",error="",le="0.025",state="success"} 1.0' % name
+        ))
+        self.assertNotEqual(-1, text.find(
+            'barterdude_processing_message_seconds_count'
+            '{application="%s",error="",state="success"} 1.0' % name
+        ))
 
     async def test_register_multiple_prometheus_hooks(self):
         """This test raised the following error:
@@ -171,9 +216,8 @@ class TestBarterDude(TestCase):
             if message.body == self.messages[0]:
                 raise error
 
-        await self.app.startup()
-
         with self.assertLogs("barterdude") as cm:
+            await self.app.startup()
             await self.queue_manager.put(
                 routing_key=self.input_queue,
                 data=self.messages[0]
@@ -207,9 +251,8 @@ class TestBarterDude(TestCase):
             if message.body == self.messages[0]:
                 raise error
 
-        await self.app.startup()
-
         with self.assertLogs("barterdude") as cm:
+            await self.app.startup()
             await self.queue_manager.put(
                 routing_key=self.input_queue,
                 data=self.messages[0]

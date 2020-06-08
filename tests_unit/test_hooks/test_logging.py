@@ -1,7 +1,7 @@
 import logging
 from asynctest import TestCase, Mock, patch
 from barterdude.hooks import logging as hook_log
-from barterdude.conf import BARTERDUDE_DEFAULT_LOG_NAME
+from barterdude.conf import BARTERDUDE_DEFAULT_APP_NAME
 
 
 class TestLogging(TestCase):
@@ -23,7 +23,7 @@ class TestLogging(TestCase):
             logging.StreamHandler
         )
         self.assertEqual(
-            logger.name, f"{BARTERDUDE_DEFAULT_LOG_NAME}.my_log")
+            logger.name, f"{BARTERDUDE_DEFAULT_APP_NAME}.my_log")
         self.assertEqual(logger.level, logging.DEBUG)
 
     @patch("barterdude.hooks.logging.Logging.logger")

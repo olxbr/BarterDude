@@ -68,11 +68,11 @@ class TestPrometheus(TestCase):
         mock_metric_obj.__getitem__ = Mock(return_value=mock_labels)
         await self.prometheus.before_consume(self.message)
         await self.prometheus.on_success(self.message)
-        self.assertEqual(mock_labels.labels.call_count, 3)
+        self.assertEqual(mock_labels.labels.call_count, 2)
         mock_labels.labels.assert_called_with(
-            error=None, state='success', test='my_test'
+            error="", state="success", test="my_test"
         )
-        self.assertEqual(mock_counter_histogram.inc.call_count, 2)
+        self.assertEqual(mock_counter_histogram.inc.call_count, 1)
         mock_counter_histogram.observe.assert_called_once()
 
     @patch("barterdude.hooks.metrics.prometheus.Prometheus.metrics")
@@ -86,11 +86,11 @@ class TestPrometheus(TestCase):
         mock_metric_obj.__getitem__ = Mock(return_value=mock_labels)
         await self.prometheus.before_consume(self.message)
         await self.prometheus.on_fail(self.message, Exception())
-        self.assertEqual(mock_labels.labels.call_count, 3)
+        self.assertEqual(mock_labels.labels.call_count, 2)
         mock_labels.labels.assert_called_with(
-            error="<class 'Exception'>", state='fail', test='my_test'
+            error="<class 'Exception'>", state="fail", test="my_test"
         )
-        self.assertEqual(mock_counter_histogram.inc.call_count, 2)
+        self.assertEqual(mock_counter_histogram.inc.call_count, 1)
         mock_counter_histogram.observe.assert_called_once()
 
     @patch("barterdude.hooks.metrics.prometheus.Prometheus.metrics")

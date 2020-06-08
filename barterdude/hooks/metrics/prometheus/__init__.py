@@ -6,6 +6,7 @@ from barterdude import BarterDude
 from barterdude.hooks import HttpHook
 from barterdude.hooks.metrics.prometheus.definitions import Definitions
 from barterdude.hooks.metrics.prometheus.metrics import Metrics
+from barterdude.conf import BARTERDUDE_DEFAULT_APP_NAME
 try:
     from prometheus_client import (
         CollectorRegistry,
@@ -24,15 +25,15 @@ class Prometheus(HttpHook):
     def __init__(
         self,
         barterdude: BarterDude,
-        labels: dict = {},
+        labels: Optional[dict] = None,
         path: str = "/metrics",
         registry: CollectorRegistry = None
     ):
         self.__registry = registry or CollectorRegistry()
-        self.__labels = labels
+        self.__labels = labels or {"application": BARTERDUDE_DEFAULT_APP_NAME}
         self.__metrics = Metrics(self.__registry)
         self.__definitions = Definitions(
-            self.__registry, self.__metrics, list(labels.keys())
+            self.__registry, self.__metrics, list(self.__labels.keys())
         )
         self._msg_start = {}
         self.__definitions.save_metrics()
@@ -58,9 +59,8 @@ class Prometheus(HttpHook):
         hash_message = id(message)
         labels = self.__labels.copy()
         labels["state"] = state
-        labels["error"] = str(type(error)) if (error) else None
-        self.metrics[state].labels(**labels).inc()
-        self.metrics[self.__definitions.TIME_MEASURE].labels(
+        labels["error"] = str(type(error)) if (error) else ""
+        self.metrics[self.__definitions.HISTOGRAM_MEASURE].labels(
             **labels).observe(
                 final_time - self._msg_start.pop(hash_message)
         )

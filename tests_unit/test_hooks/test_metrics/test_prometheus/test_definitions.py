@@ -17,27 +17,27 @@ class TestDefinitions(TestCase):
     def test_should_prepare_before_consume(self):
         name = "my_metric"
         self.definitions._prepare_before_consume(
-            name,
+            name, "namespace", "unit"
         )
         self.metrics.__setitem__.assert_called_once()
         mock_call = self.metrics.__setitem__.call_args[0]
         self.assertEqual(mock_call[0], "my_metric")
         self.assertEqual(type(mock_call[1]), Counter)
 
-    def test_should_prepare_on_complete(self):
+    def test_should_prepare_on_connection_fail(self):
         name = "my_metric"
-        self.definitions._prepare_on_complete(
-            name,
+        self.definitions._prepare_on_connection_fail(
+            name, "namespace", "unit"
         )
         self.metrics.__setitem__.assert_called_once()
         mock_call = self.metrics.__setitem__.call_args[0]
         self.assertEqual(mock_call[0], "my_metric")
         self.assertEqual(type(mock_call[1]), Counter)
 
-    def test_should_prepare_time_measure(self):
+    def test_should_prepare_histogram_measure(self):
         name = "my_metric"
-        self.definitions._prepare_time_measure(
-            name,
+        self.definitions._prepare_histogram_measure(
+            name, "namespace", "unit"
         )
         self.metrics.__setitem__.assert_called_once()
         mock_call = self.metrics.__setitem__.call_args[0]

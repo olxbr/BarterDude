@@ -54,7 +54,7 @@ healthcheck = Healthcheck(barterdude) # automatic and customizable healthcheck
 prometheus = Prometheus(barterdude, labels) # automatic and customizable Prometheus integration
 
 self.logger = getLogger("my_app", logging.DEBUG) # automatic json log with barterdude namespace
-# BARTERDUDE_DEFAULT_LOG_NAME is an env var to control log namespace
+# BARTERDUDE_DEFAULT_APP_NAME is an env var to control your project namespace
 # BARTERDUDE_DEFAULT_LOG_LEVEL is an env var to control loglevel by number 0, 10, 20, etc...
 
 monitor = Monitor(
