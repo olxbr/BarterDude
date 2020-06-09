@@ -8,7 +8,6 @@ from barterdude.monitor import Monitor
 from barterdude.hooks.healthcheck import Healthcheck
 from barterdude.hooks import logging as hook_logging
 from barterdude.hooks.metrics.prometheus import Prometheus
-from barterdude.conf import BARTERDUDE_DEFAULT_APP_NAME
 from tests_unit.helpers import load_fixture
 from tests_integration.helpers import ErrorHook
 from asyncworker.connections import AMQPConnection
@@ -183,18 +182,16 @@ class TestBarterDude(TestCase):
                 text = await response.text()
 
         self.assertEqual(status_code, 200)
-        name = BARTERDUDE_DEFAULT_APP_NAME
         self.assertNotEqual(-1, text.find(
-            'barterdude_received_number_before_consume_messages_total'
-            '{application="%s"} 1.0' % name
+            'barterdude_received_number_before_consume_messages_total 1.0'
         ))
         self.assertNotEqual(-1, text.find(
             'barterdude_processing_message_seconds_bucket'
-            '{application="%s",error="",le="0.025",state="success"} 1.0' % name
+            '{error="",le="0.025",state="success"} 1.0'
         ))
         self.assertNotEqual(-1, text.find(
             'barterdude_processing_message_seconds_count'
-            '{application="%s",error="",state="success"} 1.0' % name
+            '{error="",state="success"} 1.0'
         ))
 
     async def test_register_multiple_prometheus_hooks(self):

@@ -6,7 +6,6 @@ from barterdude import BarterDude
 from barterdude.hooks import HttpHook
 from barterdude.hooks.metrics.prometheus.definitions import Definitions
 from barterdude.hooks.metrics.prometheus.metrics import Metrics
-from barterdude.conf import BARTERDUDE_DEFAULT_APP_NAME
 try:
     from prometheus_client import (
         CollectorRegistry,
@@ -25,12 +24,12 @@ class Prometheus(HttpHook):
     def __init__(
         self,
         barterdude: BarterDude,
-        labels: Optional[dict] = None,
+        labels: dict = {},
         path: str = "/metrics",
         registry: CollectorRegistry = None
     ):
         self.__registry = registry or CollectorRegistry()
-        self.__labels = labels or {"application": BARTERDUDE_DEFAULT_APP_NAME}
+        self.__labels = labels
         self.__metrics = Metrics(self.__registry)
         self.__definitions = Definitions(
             self.__registry, self.__metrics, list(self.__labels.keys())
@@ -45,10 +44,11 @@ class Prometheus(HttpHook):
 
     async def before_consume(self, message: RabbitMQMessage):
         hash_message = id(message)
-        self.metrics[self.__definitions.BEFORE_CONSUME].labels(
-            **self.__labels
-        ).inc()
         self._msg_start[hash_message] = time.time()
+        metric = self.metrics[self.__definitions.BEFORE_CONSUME]
+        if self.__labels:
+            metric = metric.labels(**self.__labels)
+        metric.inc()
 
     async def _on_complete(self,
                            message: RabbitMQMessage,
@@ -72,9 +72,10 @@ class Prometheus(HttpHook):
         await self._on_complete(message, self.__definitions.FAIL, error)
 
     async def on_connection_fail(self, error: Exception, retries: int):
-        self.metrics[self.__definitions.CONNECTION_FAIL].labels(
-            **self.__labels
-        ).inc()
+        metric = self.metrics[self.__definitions.CONNECTION_FAIL]
+        if self.__labels:
+            metric = metric.labels(**self.__labels)
+        metric.inc()
 
     async def __call__(self, req: web.Request):
         return web.Response(
