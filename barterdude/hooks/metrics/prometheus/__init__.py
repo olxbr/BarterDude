@@ -59,7 +59,7 @@ class Prometheus(HttpHook):
         hash_message = id(message)
         labels = self.__labels.copy()
         labels["state"] = state
-        labels["error"] = str(type(error)) if (error) else ""
+        labels["error"] = str(type(error)) if error else ""
         self.metrics[self.__definitions.HISTOGRAM_MEASURE].labels(
             **labels).observe(
                 final_time - self._msg_start.pop(hash_message)
