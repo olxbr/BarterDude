@@ -3,14 +3,14 @@ from pythonjsonlogger import jsonlogger
 
 from asynctest import TestCase
 from barterdude.conf import (
-    getLogger, BARTERDUDE_DEFAULT_LOG_NAME, BARTERDUDE_DEFAULT_LOG_LEVEL
+    getLogger, BARTERDUDE_DEFAULT_APP_NAME, BARTERDUDE_DEFAULT_LOG_LEVEL
 )
 
 
 class TestConf(TestCase):
 
     def setUp(self):
-        self.log_name = BARTERDUDE_DEFAULT_LOG_NAME
+        self.log_name = BARTERDUDE_DEFAULT_APP_NAME
         self.log_level = BARTERDUDE_DEFAULT_LOG_LEVEL
 
     async def test_should_get_log_with_default_configs(self):

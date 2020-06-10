@@ -32,7 +32,7 @@ class Prometheus(HttpHook):
         self.__labels = labels
         self.__metrics = Metrics(self.__registry)
         self.__definitions = Definitions(
-            self.__registry, self.__metrics, list(labels.keys())
+            self.__registry, self.__metrics, list(self.__labels.keys())
         )
         self._msg_start = {}
         self.__definitions.save_metrics()
@@ -44,10 +44,11 @@ class Prometheus(HttpHook):
 
     async def before_consume(self, message: RabbitMQMessage):
         hash_message = id(message)
-        self.metrics[self.__definitions.BEFORE_CONSUME].labels(
-            **self.__labels
-        ).inc()
         self._msg_start[hash_message] = time.time()
+        metric = self.metrics[self.__definitions.BEFORE_CONSUME]
+        if self.__labels:
+            metric = metric.labels(**self.__labels)
+        metric.inc()
 
     async def _on_complete(self,
                            message: RabbitMQMessage,
@@ -58,9 +59,8 @@ class Prometheus(HttpHook):
         hash_message = id(message)
         labels = self.__labels.copy()
         labels["state"] = state
-        labels["error"] = str(type(error)) if (error) else None
-        self.metrics[state].labels(**labels).inc()
-        self.metrics[self.__definitions.TIME_MEASURE].labels(
+        labels["error"] = str(type(error)) if error else ""
+        self.metrics[self.__definitions.HISTOGRAM_MEASURE].labels(
             **labels).observe(
                 final_time - self._msg_start.pop(hash_message)
         )
@@ -72,9 +72,10 @@ class Prometheus(HttpHook):
         await self._on_complete(message, self.__definitions.FAIL, error)
 
     async def on_connection_fail(self, error: Exception, retries: int):
-        self.metrics[self.__definitions.CONNECTION_FAIL].labels(
-            **self.__labels
-        ).inc()
+        metric = self.metrics[self.__definitions.CONNECTION_FAIL]
+        if self.__labels:
+            metric = metric.labels(**self.__labels)
+        metric.inc()
 
     async def __call__(self, req: web.Request):
         return web.Response(

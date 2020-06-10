@@ -146,7 +146,7 @@ class RabbitMQConsumerTest(TestCase):
             data=self.messages[0]
         )
         await asyncio.sleep(1)
-        self.assertEquals(received_message, self.messages[1])
+        self.assertEqual(received_message, self.messages[1])
 
     async def test_process_message_requeue_with_requeue(self):
         handler_called = 0
@@ -164,7 +164,7 @@ class RabbitMQConsumerTest(TestCase):
             data=self.messages[0]
         )
         await asyncio.sleep(1)
-        self.assertEquals(handler_called, 2)
+        self.assertEqual(handler_called, 2)
 
     async def test_process_message_reject_with_requeue(self):
         handler_called = 0
@@ -184,7 +184,7 @@ class RabbitMQConsumerTest(TestCase):
             data=self.messages[0]
         )
         await asyncio.sleep(2)
-        self.assertEquals(handler_called, 2)
+        self.assertEqual(handler_called, 2)
 
     async def test_process_message_reject_by_validation_with_requeue(self):
         handler_called = 0
@@ -204,7 +204,7 @@ class RabbitMQConsumerTest(TestCase):
             data=self.messages[0]
         )
         await asyncio.sleep(2)
-        self.assertEquals(handler_called, 2)
+        self.assertEqual(handler_called, 2)
 
     async def test_process_message_reject_without_requeue(self):
         handler_called = 0
@@ -224,7 +224,7 @@ class RabbitMQConsumerTest(TestCase):
             data=self.messages[0]
         )
         await asyncio.sleep(2)
-        self.assertEquals(handler_called, 1)
+        self.assertEqual(handler_called, 1)
 
     async def test_process_message_reject_by_validation_without_requeue(self):
         handler_called = 0
@@ -243,7 +243,7 @@ class RabbitMQConsumerTest(TestCase):
             data=self.messages[0]
         )
         await asyncio.sleep(2)
-        self.assertEquals(handler_called, 1)
+        self.assertEqual(handler_called, 1)
 
     async def test_process_message_reject_by_validation_before_handler(self):
         handler_called = 0
@@ -260,7 +260,7 @@ class RabbitMQConsumerTest(TestCase):
             data={"wrong": "key"}
         )
         await asyncio.sleep(1)
-        self.assertEquals(handler_called, 0)
+        self.assertEqual(handler_called, 0)
 
     async def test_process_messages_and_requeue_only_one(self):
         first_read = set()

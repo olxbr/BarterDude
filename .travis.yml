@@ -7,7 +7,7 @@ python:
 # command to install dependencies
 install:
   - make setup
-  - pip install python-coveralls  # for coveralls
+  - pip install coveralls  # for coveralls
 # command to run tests
 script:
   - make all-tests
@@ -23,7 +23,7 @@ deploy:
   on:
     branch: master
     tags: true
-    condition: $TRAVIS_PYTHON_VERSION = "3.6"
+    condition: $TRAVIS_PYTHON_VERSION = "3.7"
 
 after_success: coveralls
 
