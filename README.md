@@ -175,13 +175,14 @@ async def consumer_access_storage(msg):
 
 ### Schema Validation
 
-Consumed messages can be validated by json schema:
+Consumed messages can be validated by json schema with hooks:
 
 ```python
-@barterdude.consume_amqp(
-    ["queue1", "queue2"],
-    monitor,
-    validation_schema={
+from barterdude.monitor import Monitor
+from barterdude.hooks.schema_validation import SchemaValidation
+
+schema_validation = SchemaValidation(
+        validation_schema={
             "$schema": "http://json-schema.org/draft-04/schema#",
             "$id": "http://example.com/example.json",
             "type": "object",
@@ -200,18 +201,10 @@ Consumed messages can be validated by json schema:
                     "default": ""
                 }
             }
-        },
-    requeue_on_validation_fail=False # invalid messages are removed without requeue
-)
-```
+        }, requeue_on_fail=False
+) 
+monitor = Monitor(schema_validation)
 
-You can still validate messages before produce them or when you want:
-
-```python
-from barterdude.message import MessageValidation
-
-validator = MessageValidation(json_schema)
-validator.validate(message)
 ```
 
 ### Data Protection
