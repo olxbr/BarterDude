@@ -1,7 +1,8 @@
-from asynctest import Mock, TestCase, CoroutineMock, patch, call
+from asynctest import Mock, TestCase, CoroutineMock, patch
 from asyncworker import Options, RouteTypes
 from barterdude import BarterDude
 from barterdude.message import Message
+from barterdude.exceptions import StopSuccessFlowException
 from tests_unit.helpers import load_fixture
 
 
@@ -15,7 +16,6 @@ class TestBarterDude(TestCase):
         self.monitor.dispatch_on_fail = CoroutineMock()
         self.callback = CoroutineMock()
         self.messages = [Mock(value=i) for i in range(10)]
-        self.calls = [call(message) for message in self.messages]
 
         self.AMQPConnection = AMQPConnection
         self.connection = self.AMQPConnection.return_value
@@ -88,15 +88,25 @@ class TestBarterDude(TestCase):
         self.barterdude.consume_amqp(["queue"], self.monitor)(self.callback)
         wrapper = self.decorator.call_args[0][0]
         await wrapper(self.messages)
-        self.monitor.dispatch_before_consume.assert_has_calls(
-            self.calls, any_order=True)
-        self.monitor.dispatch_on_success.assert_has_calls(
-            self.calls, any_order=True)
+        self.assertEqual(
+            len(self.messages),
+            self.monitor.dispatch_before_consume.call_count)
+        for call in self.monitor.dispatch_before_consume.call_args_list:
+            self.assertEqual(len(call[0]), 1)
+            self.assertIn(call[0][0]._message, self.messages)
+
+        self.assertEqual(
+            len(self.messages),
+            self.monitor.dispatch_on_success.call_count)
+        for call in self.monitor.dispatch_on_success.call_args_list:
+            self.assertEqual(len(call[0]), 1)
+            self.assertIn(call[0][0]._message, self.messages)
+
         self.monitor.dispatch_on_fail.assert_not_called()
 
-    async def test_should_call_callback_for_valid_message(self):
+    async def test_should_call_callback_if_before_consume_success(self):
         self.barterdude.consume_amqp(
-            ["queue"], self.monitor, validation_schema=self.schema
+            ["queue"], self.monitor
         )(self.callback)
         self.decorator.assert_called_once()
         wrapper = self.decorator.call_args[0][0]
@@ -109,9 +119,25 @@ class TestBarterDude(TestCase):
             message.body["key"]
         )
 
-    async def test_should_not_call_callback_for_valid_message(self):
+    async def test_should_not_call_callback_if_before_consume_fails(self):
+        self.monitor.dispatch_before_consume.side_effect = Exception()
         self.barterdude.consume_amqp(
-            ["queue"], self.monitor, validation_schema=self.schema
+            ["queue"], self.monitor
+        )(self.callback)
+        self.decorator.assert_called_once()
+        wrapper = self.decorator.call_args[0][0]
+        message = Mock(Message)
+        message.body = {"wrong": 'ok'}
+        with self.assertRaises(Exception):
+            await wrapper([message])
+        self.callback.assert_not_called()
+
+    async def test_ignore_callback_if_before_consume_fails_without_exception(
+            self):
+        bc = self.monitor.dispatch_before_consume
+        bc.side_effect = StopSuccessFlowException()
+        self.barterdude.consume_amqp(
+            ["queue"], self.monitor
         )(self.callback)
         self.decorator.assert_called_once()
         wrapper = self.decorator.call_args[0][0]
@@ -126,11 +152,21 @@ class TestBarterDude(TestCase):
         self.barterdude.consume_amqp(["queue"], self.monitor)(self.callback)
         wrapper = self.decorator.call_args[0][0]
         await wrapper(self.messages)
-        self.monitor.dispatch_before_consume.assert_has_calls(
-            self.calls, any_order=True)
-        error_calls = [call(message, error) for message in self.messages]
-        self.monitor.dispatch_on_fail.assert_has_calls(
-            error_calls, any_order=True)
+        self.assertEqual(
+            len(self.messages),
+            self.monitor.dispatch_before_consume.call_count)
+        for call in self.monitor.dispatch_before_consume.call_args_list:
+            self.assertEqual(len(call[0]), 1)
+            self.assertIn(call[0][0]._message, self.messages)
+
+        self.assertEqual(
+            len(self.messages),
+            self.monitor.dispatch_before_consume.call_count)
+        for call in self.monitor.dispatch_on_fail.call_args_list:
+            self.assertEqual(len(call[0]), 2)
+            self.assertIn(call[0][0]._message, self.messages)
+            self.assertEqual(call[0][1], error)
+
         self.monitor.dispatch_on_success.assert_not_called()
 
     async def test_should_call_put_when_publish(self):

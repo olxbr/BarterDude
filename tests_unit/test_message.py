@@ -1,8 +1,6 @@
 from asynctest import TestCase, Mock
 from asyncworker.rabbitmq.message import RabbitMQMessage
-from barterdude.message import (
-    Message, MessageValidation, ValidationException)
-from tests_unit.helpers import load_fixture
+from barterdude.message import Message
 
 
 class TestMessage(TestCase):
@@ -15,6 +13,7 @@ class TestMessage(TestCase):
         self.assertEqual(
             message.queue_name, rbmq_message._amqp_message.queue_name)
         self.assertEqual(message.raw, rbmq_message.serialized_data)
+        self.assertEqual(message.delivery_tag, rbmq_message._delivery_tag)
 
     async def test_should_call_rbmq_methods(self):
         rbmq_message = Mock(RabbitMQMessage)
@@ -47,31 +46,3 @@ class TestMessage(TestCase):
         rbmq_message.body = test_message
         message = Message(rbmq_message)
         self.assertEqual(message.body, test_message)
-
-
-class TestMessageValidation(TestCase):
-    def setUp(self):
-        self.schema = load_fixture("schema.json")
-        self.rbmq_message = Mock(RabbitMQMessage)
-
-    def test_should_return_without_validation_even_wrong(self):
-        self.rbmq_message.body = {"wrong": "key"}
-        validation = MessageValidation()
-        message = validation(self.rbmq_message)
-        validation.validate(message)
-        self.assertEqual(self.rbmq_message.body, message.body)
-
-    def test_should_return_message_with_validation(self):
-        self.rbmq_message.body = {"key": "ok"}
-        validation = MessageValidation(self.schema)
-        message = validation(self.rbmq_message)
-        validation.validate(message)
-        self.assertEqual(self.rbmq_message.body, message.body)
-
-    def test_should_raise_error_with_wrong_message(self):
-        self.rbmq_message.body = {"wrong": "key"}
-        validation = MessageValidation(self.schema)
-        with self.assertRaises(ValidationException):
-            validation(self.rbmq_message)
-        with self.assertRaises(ValidationException):
-            validation.validate(self.rbmq_message)

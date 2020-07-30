@@ -5,9 +5,12 @@ from asynctest import TestCase
 from barterdude import BarterDude
 from barterdude.monitor import Monitor
 from barterdude.hooks.logging import Logging
-from barterdude.message import ValidationException
+from barterdude.hooks.requeue import Requeue
+from barterdude.hooks.retry import Retry
+from barterdude.hooks.schema_validation import SchemaValidation
+from barterdude.exceptions import StopFailFlowException
 from tests_unit.helpers import load_fixture
-from tests_integration.helpers import ErrorHook
+from tests_integration.helpers import ErrorHook, StopHook
 from asyncworker.connections import AMQPConnection
 from random import choices
 from string import ascii_uppercase
@@ -94,8 +97,10 @@ class RabbitMQConsumerTest(TestCase):
     async def test_process_messages_successfully_with_validation(self):
         received_messages = set()
 
+        monitor = Monitor(SchemaValidation(self.schema))
+
         @self.app.consume_amqp(
-            [self.input_queue], coroutines=1, validation_schema=self.schema)
+            [self.input_queue], coroutines=1, monitor=monitor)
         async def handler(message):
             nonlocal received_messages
             received_messages.add(message.body["key"])
@@ -123,7 +128,25 @@ class RabbitMQConsumerTest(TestCase):
         await asyncio.sleep(1)
 
         for message in self.messages:
-            self.assertTrue(message["key"] in received_messages)
+            self.assertIn(message["key"], received_messages)
+
+    async def test_not_process_messages_successfully_with_stop_hook(self):
+        received_messages = set()
+
+        monitor = Monitor(StopHook())
+
+        @self.app.consume_amqp(
+            [self.input_queue], coroutines=1, monitor=monitor)
+        async def handler(message):
+            nonlocal received_messages
+            received_messages.add(message.body["key"])
+
+        await self.app.startup()
+        await self.send_all_messages()
+        await asyncio.sleep(1)
+
+        for message in self.messages:
+            self.assertNotIn(message["key"], received_messages)
 
     async def test_process_one_message_and_publish(self):
         @self.app.consume_amqp([self.input_queue], coroutines=1)
@@ -148,13 +171,15 @@ class RabbitMQConsumerTest(TestCase):
         await asyncio.sleep(1)
         self.assertEqual(received_message, self.messages[1])
 
-    async def test_process_message_requeue_with_requeue(self):
+    async def test_process_message_reject_with_requeue(self):
         handler_called = 0
 
-        @self.app.consume_amqp([self.input_queue], coroutines=1)
+        @self.app.consume_amqp(
+            [self.input_queue], requeue_on_fail=True,
+            bulk_flush_interval=1, coroutines=1)
         async def handler(messages):
             nonlocal handler_called
-            handler_called = handler_called + 1
+            handler_called += 1
             if handler_called < 2:
                 raise Exception()
 
@@ -166,46 +191,6 @@ class RabbitMQConsumerTest(TestCase):
         await asyncio.sleep(1)
         self.assertEqual(handler_called, 2)
 
-    async def test_process_message_reject_with_requeue(self):
-        handler_called = 0
-
-        @self.app.consume_amqp(
-            [self.input_queue], requeue_on_fail=True,
-            bulk_flush_interval=1, coroutines=1)
-        async def handler(messages):
-            nonlocal handler_called
-            handler_called = handler_called + 1
-            if handler_called < 2:
-                raise Exception()
-
-        await self.app.startup()
-        await self.queue_manager.put(
-            routing_key=self.input_queue,
-            data=self.messages[0]
-        )
-        await asyncio.sleep(2)
-        self.assertEqual(handler_called, 2)
-
-    async def test_process_message_reject_by_validation_with_requeue(self):
-        handler_called = 0
-
-        @self.app.consume_amqp(
-            [self.input_queue], requeue_on_validation_fail=True,
-            bulk_flush_interval=1, coroutines=1)
-        async def handler(messages):
-            nonlocal handler_called
-            handler_called = handler_called + 1
-            if handler_called < 2:
-                raise ValidationException()
-
-        await self.app.startup()
-        await self.queue_manager.put(
-            routing_key=self.input_queue,
-            data=self.messages[0]
-        )
-        await asyncio.sleep(2)
-        self.assertEqual(handler_called, 2)
-
     async def test_process_message_reject_without_requeue(self):
         handler_called = 0
 
@@ -214,9 +199,53 @@ class RabbitMQConsumerTest(TestCase):
             bulk_flush_interval=1, coroutines=1)
         async def handler(message):
             nonlocal handler_called
-            handler_called = handler_called + 1
+            handler_called += 1
             if handler_called < 2:
                 raise Exception()
+
+        await self.app.startup()
+        await self.queue_manager.put(
+            routing_key=self.input_queue,
+            data=self.messages[0]
+        )
+        await asyncio.sleep(2)
+        self.assertEqual(handler_called, 1)
+
+    async def test_process_message_reject_with_requeue_hook(self):
+        handler_called = 0
+
+        monitor = Monitor(Requeue(requeue_on_fail=True))
+
+        @self.app.consume_amqp(
+            [self.input_queue], requeue_on_fail=False,
+            bulk_flush_interval=1, coroutines=1, monitor=monitor)
+        async def handler(message):
+            nonlocal handler_called
+            handler_called += 1
+            if handler_called < 2:
+                raise Exception()
+
+        await self.app.startup()
+        await self.queue_manager.put(
+            routing_key=self.input_queue,
+            data=self.messages[0]
+        )
+        await asyncio.sleep(2)
+        self.assertEqual(handler_called, 2)
+
+    async def test_process_message_no_requeue_by_validation_with_requeue(self):
+        handler_called = 0
+
+        monitor = Monitor(SchemaValidation(requeue_on_fail=False))
+
+        @self.app.consume_amqp(
+            [self.input_queue], monitor=monitor,
+            bulk_flush_interval=1, coroutines=1, requeue_on_fail=True)
+        async def handler(messages):
+            nonlocal handler_called
+            handler_called += 1
+            if handler_called < 2:
+                raise StopFailFlowException()
 
         await self.app.startup()
         await self.queue_manager.put(
@@ -229,13 +258,16 @@ class RabbitMQConsumerTest(TestCase):
     async def test_process_message_reject_by_validation_without_requeue(self):
         handler_called = 0
 
+        monitor = Monitor(SchemaValidation(requeue_on_fail=False))
+
         @self.app.consume_amqp(
-            [self.input_queue], requeue_on_validation_fail=False)
+            [self.input_queue], monitor=monitor,
+            bulk_flush_interval=1, coroutines=1)
         async def handler(messages):
             nonlocal handler_called
-            handler_called = handler_called + 1
+            handler_called += 1
             if handler_called < 2:
-                raise ValidationException()
+                raise StopFailFlowException()
 
         await self.app.startup()
         await self.queue_manager.put(
@@ -245,14 +277,38 @@ class RabbitMQConsumerTest(TestCase):
         await asyncio.sleep(2)
         self.assertEqual(handler_called, 1)
 
+    async def test_process_message_reject_by_validation_with_requeue(self):
+        handler_called = 0
+
+        monitor = Monitor(SchemaValidation(requeue_on_fail=True))
+
+        @self.app.consume_amqp(
+            [self.input_queue], monitor=monitor,
+            bulk_flush_interval=1, coroutines=1)
+        async def handler(messages):
+            nonlocal handler_called
+            handler_called += 1
+            if handler_called < 2:
+                raise StopFailFlowException()
+
+        await self.app.startup()
+        await self.queue_manager.put(
+            routing_key=self.input_queue,
+            data=self.messages[0]
+        )
+        await asyncio.sleep(2)
+        self.assertEqual(handler_called, 2)
+
     async def test_process_message_reject_by_validation_before_handler(self):
         handler_called = 0
 
+        monitor = Monitor(SchemaValidation(self.schema))
+
         @self.app.consume_amqp(
-            [self.input_queue], validation_schema=self.schema)
+            [self.input_queue], monitor=monitor)
         async def handler(messages):
             nonlocal handler_called
-            handler_called = handler_called + 1
+            handler_called += 1
 
         await self.app.startup()
         await self.queue_manager.put(
@@ -292,6 +348,27 @@ class RabbitMQConsumerTest(TestCase):
             self.assertTrue(message["key"] in first_read)
 
         self.assertSetEqual(second_read, {self.messages[0]["key"]})
+
+    async def test_process_message_with_retry(self):
+        handler_called = 0
+
+        monitor = Monitor(Retry(max_tries=3, backoff_base_ms=2))
+
+        @self.app.consume_amqp(
+            [self.input_queue], requeue_on_fail=False,
+            bulk_flush_interval=1, coroutines=1, monitor=monitor)
+        async def handler(message):
+            nonlocal handler_called
+            handler_called += 1
+            raise Exception()
+
+        await self.app.startup()
+        await self.queue_manager.put(
+            routing_key=self.input_queue,
+            data=self.messages[0]
+        )
+        await asyncio.sleep(4)
+        self.assertEqual(handler_called, 3)
 
     async def test_fails_to_connect_to_rabbitmq(self):
         monitor = Monitor(Logging())

@@ -1,5 +1,6 @@
 from asynctest import TestCase, MagicMock, Mock, CoroutineMock, patch
 from barterdude.monitor import Monitor
+from barterdude.exceptions import StopFailFlowException
 
 
 class TestMonitor(TestCase):
@@ -67,4 +68,21 @@ class TestMonitor(TestCase):
             "exception": repr.return_value,
             "traceback": format_tb.return_value,
         })
+        self.hook2.before_consume.assert_called_with({})
+
+    @patch("barterdude.monitor.format_tb")
+    async def test_should_not_log_or_continue_if_hook_fail_with_stop(
+            self, format_tb):
+        logger = MagicMock()
+        exception = StopFailFlowException()
+
+        async def before_consume(msg):
+            raise exception
+        self.monitor._logger = logger
+        self.hook1.before_consume = before_consume
+        self.hook2.before_consume = CoroutineMock()
+        with self.assertRaises(StopFailFlowException):
+            await self.monitor.dispatch_before_consume({})
+        format_tb.assert_not_called()
+        logger.error.assert_not_called()
         self.hook2.before_consume.assert_called_with({})

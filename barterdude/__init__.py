@@ -4,9 +4,13 @@ from asyncworker.options import Options
 from asyncworker.connections import AMQPConnection
 from asyncworker.rabbitmq.message import RabbitMQMessage
 from collections import MutableMapping
-from typing import Iterable, Optional
+from typing import Iterable
 from barterdude.monitor import Monitor
-from barterdude.message import MessageValidation, ValidationException
+from barterdude.flow import Flow
+from barterdude.message import Message
+from barterdude.exceptions import (
+    StopFailFlowException, StopSuccessFlowException
+)
 
 
 class BarterDude(MutableMapping):
@@ -40,25 +44,22 @@ class BarterDude(MutableMapping):
         monitor: Monitor = Monitor(),
         coroutines: int = 10,
         bulk_flush_interval: float = 60.0,
-        requeue_on_fail: bool = True,
-        requeue_on_validation_fail: bool = False,
-        validation_schema: Optional[dict] = {}
+        requeue_on_fail: bool = True
     ):
-        msg_validation = MessageValidation(validation_schema)
-
         def decorator(f):
-            async def process_message(message: RabbitMQMessage):
+            async def process_message(message: Message):
                 await monitor.dispatch_before_consume(message)
                 try:
-                    await f(msg_validation(message))
-                except ValidationException as error:
-                    await monitor.dispatch_on_fail(message, error)
-                    message.reject(requeue_on_validation_fail)
+                    await f(message)
                 except Exception as error:
-                    await monitor.dispatch_on_fail(message, error)
                     message.reject(requeue_on_fail)
+                    await monitor.dispatch_on_fail(message, error)
+                    raise StopFailFlowException(repr(error))
                 else:
                     await monitor.dispatch_on_success(message)
+                    raise StopSuccessFlowException()
+
+            flow = Flow(process_message)
 
             @self.__app.route(
                 queues,
@@ -71,7 +72,8 @@ class BarterDude(MutableMapping):
                 }
             )
             async def wrapper(messages: RabbitMQMessage):
-                await gather(*map(process_message, messages))
+                await gather(*map(
+                    lambda m: flow.process(Message(m)), messages))
 
             return wrapper
 

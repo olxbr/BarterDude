@@ -1,11 +1,4 @@
-import jsonschema
-from functools import partial
-from typing import Optional, Union
 from asyncworker.rabbitmq.message import RabbitMQMessage
-
-
-class ValidationException(jsonschema.ValidationError):
-    pass
 
 
 class Message:
@@ -28,6 +21,10 @@ class Message:
     def properties(self):
         return self._message._amqp_message._properties
 
+    @property
+    def delivery_tag(self):
+        return self._message._delivery_tag
+
     def accept(self):
         return self._message.accept()
 
@@ -39,25 +36,3 @@ class Message:
 
     async def process_exception(self):
         return await self._message.process_exception()
-
-
-class MessageValidation:
-    def __init__(self, validation_schema: Optional[dict] = {}):
-        self._validate = bool(validation_schema)
-        resolver = jsonschema.RefResolver.from_schema(validation_schema)
-        self._builder = partial(
-            jsonschema.validate,
-            schema=validation_schema,
-            resolver=resolver
-        )
-
-    def validate(self, message: Union[RabbitMQMessage, Message]):
-        if self._validate:
-            try:
-                self._builder(message.body)
-            except jsonschema.ValidationError as err:
-                raise ValidationException(err)
-
-    def __call__(self, message: RabbitMQMessage):
-        self.validate(message)
-        return Message(message)

@@ -2,7 +2,7 @@ import json
 
 from barterdude import BarterDude
 from barterdude.hooks import HttpHook
-from asyncworker.rabbitmq.message import RabbitMQMessage
+from barterdude.message import Message
 from aiohttp import web
 from time import time
 from collections import deque
@@ -42,13 +42,10 @@ class Healthcheck(HttpHook):
     def force_fail(self):
         self.__force_fail = True
 
-    async def before_consume(self, message: RabbitMQMessage):
-        pass
-
-    async def on_success(self, message: RabbitMQMessage):
+    async def on_success(self, message: Message):
         self.__success.append(time())
 
-    async def on_fail(self, message: RabbitMQMessage, error: Exception):
+    async def on_fail(self, message: Message, error: Exception):
         self.__fail.append(time())
 
     async def on_connection_fail(self, error: Exception, retries: int):

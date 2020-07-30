@@ -150,43 +150,37 @@ class TestPrometheus(TestCase):
         counter.inc.assert_called_once()
 
     def test_should_call_counter(self):
-        self.assertTrue(
-            isinstance(self.prometheus.metrics.counter(
+        self.assertIsInstance(
+            self.prometheus.metrics.counter(
                 name="test", documentation="doc"
             ), Counter)
-        )
 
     def test_should_call_gauge(self):
-        self.assertTrue(
-            isinstance(self.prometheus.metrics.gauge(
+        self.assertIsInstance(
+            self.prometheus.metrics.gauge(
                 name="test", documentation="doc"
             ), Gauge)
-        )
 
     def test_should_call_summary(self):
-        self.assertTrue(
-            isinstance(self.prometheus.metrics.summary(
+        self.assertIsInstance(
+            self.prometheus.metrics.summary(
                 name="test", documentation="doc"
             ), Summary)
-        )
 
     def test_should_call_histogram(self):
-        self.assertTrue(
-            isinstance(self.prometheus.metrics.histogram(
+        self.assertIsInstance(
+            self.prometheus.metrics.histogram(
                 name="test", documentation="doc"
             ), Histogram)
-        )
 
     def test_should_call_info(self):
-        self.assertTrue(
-            isinstance(self.prometheus.metrics.info(
+        self.assertIsInstance(
+            self.prometheus.metrics.info(
                 name="test", documentation="doc"
             ), Info)
-        )
 
     def test_should_call_enum(self):
-        self.assertTrue(
-            isinstance(self.prometheus.metrics.enum(
+        self.assertIsInstance(
+            self.prometheus.metrics.enum(
                 name="test", documentation="doc", states=Mock()
             ), Enum)
-        )

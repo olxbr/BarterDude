@@ -1,9 +1,9 @@
 import time
 from aiohttp import web
 from typing import Optional
-from asyncworker.rabbitmq.message import RabbitMQMessage
 from barterdude import BarterDude
 from barterdude.hooks import HttpHook
+from barterdude.message import Message
 from barterdude.hooks.metrics.prometheus.definitions import Definitions
 from barterdude.hooks.metrics.prometheus.metrics import Metrics
 try:
@@ -42,7 +42,7 @@ class Prometheus(HttpHook):
     def metrics(self):
         return self.__metrics
 
-    async def before_consume(self, message: RabbitMQMessage):
+    async def before_consume(self, message: Message):
         hash_message = id(message)
         self._msg_start[hash_message] = time.time()
         metric = self.metrics[self.__definitions.BEFORE_CONSUME]
@@ -51,7 +51,7 @@ class Prometheus(HttpHook):
         metric.inc()
 
     async def _on_complete(self,
-                           message: RabbitMQMessage,
+                           message: Message,
                            state: str,
                            error: Optional[Exception] = None):
 
@@ -65,10 +65,10 @@ class Prometheus(HttpHook):
                 final_time - self._msg_start.pop(hash_message)
         )
 
-    async def on_success(self, message: RabbitMQMessage):
+    async def on_success(self, message: Message):
         await self._on_complete(message, self.__definitions.SUCCESS)
 
-    async def on_fail(self, message: RabbitMQMessage, error: Exception):
+    async def on_fail(self, message: Message, error: Exception):
         await self._on_complete(message, self.__definitions.FAIL, error)
 
     async def on_connection_fail(self, error: Exception, retries: int):

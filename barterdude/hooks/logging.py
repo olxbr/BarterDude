@@ -1,7 +1,7 @@
 import json
 from traceback import format_tb
-from asyncworker.rabbitmq.message import RabbitMQMessage
 
+from barterdude.message import Message
 from barterdude.conf import (
     getLogger,
     BARTERDUDE_DEFAULT_LOG_LEVEL,
@@ -23,33 +23,33 @@ class Logging(BaseHook):
         return self._logger
 
     def _add_message_body(
-            self, log_message: dict, message: RabbitMQMessage) -> dict:
+            self, log_message: dict, message: Message) -> dict:
         if not BARTERDUDE_LOG_REDACTED:
             log_message["message_body"] = json.dumps(message.body)
         return log_message
 
-    async def before_consume(self, message: RabbitMQMessage):
+    async def before_consume(self, message: Message):
         self.logger.info(
             self._add_message_body({
                 "message": "Before consume message",
-                "delivery_tag": message._delivery_tag,
+                "delivery_tag": message.delivery_tag,
             }, message)
         )
 
-    async def on_success(self, message: RabbitMQMessage):
+    async def on_success(self, message: Message):
         self.logger.info(
             self._add_message_body({
                 "message": "Successfully consumed message",
-                "delivery_tag": message._delivery_tag,
+                "delivery_tag": message.delivery_tag,
             }, message)
         )
 
-    async def on_fail(self, message: RabbitMQMessage, error: Exception):
+    async def on_fail(self, message: Message, error: Exception):
         self.logger.error(
             self._add_message_body({
                 "message": "Failed to consume message",
-                "delivery_tag": message._delivery_tag,
-                "exception": repr(error),
+                "delivery_tag": message.delivery_tag,
+                "exception": error,
                 "traceback": format_tb(error.__traceback__),
             }, message)
         )
@@ -58,6 +58,6 @@ class Logging(BaseHook):
         self.logger.error({
             "message": "Failed to connect to the broker",
             "retries": retries,
-            "exception": repr(error),
+            "exception": error,
             "traceback": format_tb(error.__traceback__),
         })

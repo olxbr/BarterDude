@@ -27,20 +27,18 @@ class TestLogging(TestCase):
         self.assertEqual(logger.level, logging.DEBUG)
 
     @patch("barterdude.hooks.logging.Logging.logger")
-    @patch("barterdude.hooks.logging.repr")
     @patch("barterdude.hooks.logging.format_tb")
     async def test_should_log_on_connection_fail(
-        self, format_tb, repr, logger
+        self, format_tb, logger
     ):
         retries = Mock()
         exception = Exception()
         await self.logging.on_connection_fail(exception, retries)
-        repr.assert_called_once_with(exception)
         format_tb.assert_called_once_with(exception.__traceback__)
         logger.error.assert_called_once_with({
             "message": "Failed to connect to the broker",
             "retries": retries,
-            "exception": repr.return_value,
+            "exception": exception,
             "traceback": format_tb.return_value,
         })
 
@@ -60,7 +58,7 @@ class TestLoggingNotRedacted(TestCase):
         dumps.assert_called_once_with(self.message.body)
         logger.info.assert_called_once_with({
             "message": "Before consume message",
-            "delivery_tag": self.message._delivery_tag,
+            "delivery_tag": self.message.delivery_tag,
             "message_body": dumps.return_value,
         })
 
@@ -71,25 +69,23 @@ class TestLoggingNotRedacted(TestCase):
         dumps.assert_called_once_with(self.message.body)
         logger.info.assert_called_once_with({
             "message": "Successfully consumed message",
-            "delivery_tag": self.message._delivery_tag,
+            "delivery_tag": self.message.delivery_tag,
             "message_body": dumps.return_value,
         })
 
     @patch("barterdude.hooks.logging.Logging.logger")
     @patch("barterdude.hooks.logging.json.dumps")
-    @patch("barterdude.hooks.logging.repr")
     @patch("barterdude.hooks.logging.format_tb")
-    async def test_should_log_on_fail(self, format_tb, repr, dumps, logger):
+    async def test_should_log_on_fail(self, format_tb, dumps, logger):
         exception = Exception()
         await self.logging.on_fail(self.message, exception)
         dumps.assert_called_once_with(self.message.body)
-        repr.assert_called_once_with(exception)
         format_tb.assert_called_once_with(exception.__traceback__)
         logger.error.assert_called_once_with({
             "message": "Failed to consume message",
-            "delivery_tag": self.message._delivery_tag,
+            "delivery_tag": self.message.delivery_tag,
             "message_body": dumps.return_value,
-            "exception": repr.return_value,
+            "exception": exception,
             "traceback": format_tb.return_value,
         })
 
@@ -109,7 +105,7 @@ class TestLoggingRedacted(TestCase):
         dumps.assert_not_called()
         logger.info.assert_called_once_with({
             "message": "Before consume message",
-            "delivery_tag": self.message._delivery_tag
+            "delivery_tag": self.message.delivery_tag
         })
 
     @patch("barterdude.hooks.logging.Logging.logger")
@@ -119,22 +115,20 @@ class TestLoggingRedacted(TestCase):
         dumps.assert_not_called()
         logger.info.assert_called_once_with({
             "message": "Successfully consumed message",
-            "delivery_tag": self.message._delivery_tag
+            "delivery_tag": self.message.delivery_tag
         })
 
     @patch("barterdude.hooks.logging.Logging.logger")
     @patch("barterdude.hooks.logging.json.dumps")
-    @patch("barterdude.hooks.logging.repr")
     @patch("barterdude.hooks.logging.format_tb")
-    async def test_should_log_on_fail(self, format_tb, repr, dumps, logger):
+    async def test_should_log_on_fail(self, format_tb, dumps, logger):
         exception = Exception()
         await self.logging.on_fail(self.message, exception)
         dumps.assert_not_called()
-        repr.assert_called_once_with(exception)
         format_tb.assert_called_once_with(exception.__traceback__)
         logger.error.assert_called_once_with({
             "message": "Failed to consume message",
-            "delivery_tag": self.message._delivery_tag,
-            "exception": repr.return_value,
+            "delivery_tag": self.message.delivery_tag,
+            "exception": exception,
             "traceback": format_tb.return_value,
         })
