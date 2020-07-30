@@ -49,7 +49,7 @@ class Logging(BaseHook):
             self._add_message_body({
                 "message": "Failed to consume message",
                 "delivery_tag": message.delivery_tag,
-                "exception": error,
+                "exception": repr(error),
                 "traceback": format_tb(error.__traceback__),
             }, message)
         )
@@ -58,6 +58,6 @@ class Logging(BaseHook):
         self.logger.error({
             "message": "Failed to connect to the broker",
             "retries": retries,
-            "exception": error,
+            "exception": repr(error),
             "traceback": format_tb(error.__traceback__),
         })

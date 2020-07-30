@@ -222,7 +222,7 @@ class TestBarterDude(TestCase):
             await asyncio.sleep(1)
 
         key = self.messages[0]["key"]
-        error_str = 'Exception(\'raise expected\')'
+        error_str = repr(error)
 
         self.assertIn("'message': 'Before consume message'", cm.output[0])
         self.assertNotIn(
@@ -235,7 +235,7 @@ class TestBarterDude(TestCase):
             f"'message_body': '{{\"key\": \"{key}\"}}'", cm.output[1]
         )
         self.assertIn("'delivery_tag': 1", cm.output[1])
-        self.assertIn(f"'exception': {error_str}", cm.output[1])
+        self.assertIn(f"'exception': \"{error_str}\"", cm.output[1])
         self.assertIn("'traceback': [", cm.output[1])
 
     async def test_print_logs(self):
@@ -257,7 +257,7 @@ class TestBarterDude(TestCase):
             await asyncio.sleep(1)
 
         key = self.messages[0]["key"]
-        error_str = 'Exception(\'raise expected\')'
+        error_str = repr(error)
 
         self.assertIn("'message': 'Before consume message'", cm.output[0])
         self.assertIn(
@@ -270,5 +270,5 @@ class TestBarterDude(TestCase):
             f"'message_body': '{{\"key\": \"{key}\"}}'", cm.output[1]
         )
         self.assertIn("'delivery_tag': 1", cm.output[1])
-        self.assertIn(f"'exception': {error_str}", cm.output[1])
+        self.assertIn(f"'exception': \"{error_str}\"", cm.output[1])
         self.assertIn("'traceback': [", cm.output[1])

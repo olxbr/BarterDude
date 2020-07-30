@@ -38,7 +38,7 @@ class TestLogging(TestCase):
         logger.error.assert_called_once_with({
             "message": "Failed to connect to the broker",
             "retries": retries,
-            "exception": exception,
+            "exception": repr(exception),
             "traceback": format_tb.return_value,
         })
 
@@ -85,7 +85,7 @@ class TestLoggingNotRedacted(TestCase):
             "message": "Failed to consume message",
             "delivery_tag": self.message.delivery_tag,
             "message_body": dumps.return_value,
-            "exception": exception,
+            "exception": repr(exception),
             "traceback": format_tb.return_value,
         })
 
@@ -129,6 +129,6 @@ class TestLoggingRedacted(TestCase):
         logger.error.assert_called_once_with({
             "message": "Failed to consume message",
             "delivery_tag": self.message.delivery_tag,
-            "exception": exception,
+            "exception": repr(exception),
             "traceback": format_tb.return_value,
         })
