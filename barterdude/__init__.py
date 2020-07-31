@@ -55,9 +55,8 @@ class BarterDude(MutableMapping):
                     message.reject(requeue_on_fail)
                     await monitor.dispatch_on_fail(message, error)
                     raise StopFailFlowException(repr(error))
-                else:
-                    await monitor.dispatch_on_success(message)
-                    raise StopSuccessFlowException()
+                await monitor.dispatch_on_success(message)
+                raise StopSuccessFlowException()
 
             flow = Flow(process_message)
 
