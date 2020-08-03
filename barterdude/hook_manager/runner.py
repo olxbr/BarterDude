@@ -6,10 +6,10 @@ from asyncio import gather
 
 
 class Runner:
-    async def _callback(self,
-                        method: Callable[[Any], Optional[Any]],
-                        subject: Any,
-                        error: Optional[Exception] = None):
+    async def __callback(self,
+                         method: Callable[[Any], Optional[Any]],
+                         subject: Any,
+                         error: Optional[Exception] = None):
         try:
             return await (method(subject, error) if error else method(subject))
         except ALL_FLOW as e:
@@ -28,7 +28,7 @@ class Runner:
         callbacks = []
         for hook in hooks:
             callbacks.append(
-                self._callback(getattr(hook, method_name), subject, error)
+                self.__callback(getattr(hook, method_name), subject, error)
             )
         return callbacks
 
