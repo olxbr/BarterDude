@@ -1,6 +1,5 @@
-from typing import Iterable, Callable, Optional, Any
+from typing import Tuple, Callable, Optional, Any
 from traceback import format_tb
-from functools import lru_cache
 from barterdude.exceptions import ALL_FLOW
 from barterdude.hooks import BaseHook
 from asyncio import gather
@@ -22,18 +21,16 @@ class Runner:
                 "traceback": format_tb(e.__traceback__),
             })
 
-    @lru_cache(maxsize=None)
     def _prepare_callbacks(self, method_name: str,
                            subject: Any,
-                           hooks: Iterable[BaseHook],
+                           hooks: Tuple[BaseHook],
                            error: Optional[Exception] = None):
         callbacks = []
-
         for hook in hooks:
             callbacks.append(
                 self._callback(getattr(hook, method_name), subject, error)
             )
         return callbacks
 
-    async def run(callbacks: Iterable[Callable[[Any], Optional[Any]]]):
+    async def _run(self, callbacks: Tuple[Callable[[Any], Optional[Any]]]):
         await gather(*callbacks)

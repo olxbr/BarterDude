@@ -5,7 +5,7 @@ from asyncworker.connections import AMQPConnection
 from asyncworker.rabbitmq.message import RabbitMQMessage
 from collections import MutableMapping
 from typing import Iterable
-from barterdude.monitor import Monitor
+from barterdude.hook_manager import HookManager
 from barterdude.flow import Flow
 from barterdude.message import Message
 from barterdude.exceptions import (
@@ -41,21 +41,21 @@ class BarterDude(MutableMapping):
     def consume_amqp(
         self,
         queues: Iterable[str],
-        monitor: Monitor = Monitor(),
+        hook_manager: HookManager = HookManager(),
         coroutines: int = 10,
         bulk_flush_interval: float = 60.0,
         requeue_on_fail: bool = True
     ):
         def decorator(f):
             async def process_message(message: Message):
-                await monitor.dispatch_before_consume(message)
+                await hook_manager.dispatch_before_consume(message)
                 try:
                     await f(message)
                 except Exception as error:
                     message.reject(requeue_on_fail)
-                    await monitor.dispatch_on_fail(message, error)
+                    await hook_manager.dispatch_on_fail(message, error)
                     raise StopFailFlowException(repr(error))
-                await monitor.dispatch_on_success(message)
+                await hook_manager.dispatch_on_success(message)
                 raise StopSuccessFlowException()
 
             flow = Flow(process_message)
@@ -67,7 +67,7 @@ class BarterDude(MutableMapping):
                     Options.BULK_SIZE: coroutines,
                     Options.BULK_FLUSH_INTERVAL: bulk_flush_interval,
                     Options.CONNECTION_FAIL_CALLBACK:
-                        monitor.dispatch_on_connection_fail,
+                        hook_manager.dispatch_on_connection_fail,
                 }
             )
             async def wrapper(messages: RabbitMQMessage):

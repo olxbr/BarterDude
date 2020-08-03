@@ -28,6 +28,7 @@ class HookManager(Runner):
     async def _dispatch_by_identifier(self, identifier: str,
                                       subject: Any,
                                       error: Optional[Exception] = None):
+
         for layer in self._layers.get(identifier):
             if error:
                 callbacks = self._prepare_callbacks(
@@ -35,7 +36,7 @@ class HookManager(Runner):
             else:
                 callbacks = self._prepare_callbacks(
                     identifier, subject, layer.hooks)
-            await self.run(callbacks)
+            await self._run(callbacks)
 
     def add_before_consume(self, *hooks: Iterable[BaseHook]):
         layer = self._layers.new(self.BEFORE_CONSUME)
@@ -52,6 +53,12 @@ class HookManager(Runner):
     def add_on_connection_fail(self, *hooks: Iterable[BaseHook]):
         layer = self._layers.new(self.ON_CONNECTION_FAIL)
         self._add_hooks_by_callback(layer, *hooks)
+
+    def add_for_all_hooks(self, *hooks: Iterable[BaseHook]):
+        self.add_before_consume(*hooks)
+        self.add_on_success(*hooks)
+        self.add_on_fail(*hooks)
+        self.add_on_connection_fail(*hooks)
 
     def log_layers(self):
         self._logger.info(str(self._layers))
@@ -70,7 +77,7 @@ class HookManager(Runner):
         await self._dispatch_by_identifier(identifier, message, error)
 
     async def dispatch_on_connection_fail(
-            self, error: Exception, retries: int
+            self, retries: int, error: Exception
     ):
         identifier = self.ON_CONNECTION_FAIL
         await self._dispatch_by_identifier(identifier, retries, error)

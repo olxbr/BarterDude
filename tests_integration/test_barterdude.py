@@ -4,7 +4,8 @@ import asyncio
 
 from asynctest import TestCase
 from barterdude import BarterDude
-from barterdude.monitor import Monitor
+from barterdude.hook_manager import HookManager
+from barterdude.layer.manager import LayerManager
 from barterdude.hooks.healthcheck import Healthcheck
 from barterdude.hooks import logging as hook_logging
 from barterdude.hooks.metrics.prometheus import Prometheus
@@ -55,6 +56,8 @@ class TestBarterDude(TestCase):
         self.schema = load_fixture("schema.json")
 
         self.app = BarterDude(hostname=self.rabbitmq_host)
+        layer_manager = LayerManager()
+        self.hook_manager = HookManager(layer_manager=layer_manager)
 
     async def tearDown(self):
         await self.app.shutdown()
@@ -70,9 +73,10 @@ class TestBarterDude(TestCase):
         await self.queue_manager.connection.close()
 
     async def test_obtains_healthcheck(self):
-        monitor = Monitor(Healthcheck(self.app))
 
-        @self.app.consume_amqp([self.input_queue], monitor)
+        self.hook_manager.add_for_all_hooks(Healthcheck(self.app))
+
+        @self.app.consume_amqp([self.input_queue], self.hook_manager)
         async def handler(message):
             pass
 
@@ -98,9 +102,13 @@ class TestBarterDude(TestCase):
         )
 
     async def test_obtains_healthcheck_even_with_crashed_hook(self):
-        monitor = Monitor(ErrorHook(), Healthcheck(self.app))
 
-        @self.app.consume_amqp([self.input_queue], monitor)
+        self.hook_manager.add_for_all_hooks(
+            ErrorHook(),
+            Healthcheck(self.app)
+        )
+
+        @self.app.consume_amqp([self.input_queue], self.hook_manager)
         async def handler(message):
             pass
 
@@ -127,9 +135,9 @@ class TestBarterDude(TestCase):
 
     async def test_obtains_prometheus_metrics(self):
         labels = {"app_name": "barterdude_consumer"}
-        monitor = Monitor(Prometheus(self.app, labels))
+        self.hook_manager.add_for_all_hooks(Prometheus(self.app, labels))
 
-        @self.app.consume_amqp([self.input_queue], monitor)
+        @self.app.consume_amqp([self.input_queue], self.hook_manager)
         async def handler(message):
             pass
 
@@ -161,9 +169,9 @@ class TestBarterDude(TestCase):
         ))
 
     async def test_obtains_prometheus_metrics_without_labels(self):
-        monitor = Monitor(Prometheus(self.app))
+        self.hook_manager.add_for_all_hooks(Prometheus(self.app))
 
-        @self.app.consume_amqp([self.input_queue], monitor)
+        @self.app.consume_amqp([self.input_queue], self.hook_manager)
         async def handler(message):
             pass
 
@@ -198,17 +206,17 @@ class TestBarterDude(TestCase):
         """This test raised the following error:
            ValueError: Duplicated timeseries in CollectorRegistry"""
 
-        Monitor(
+        self.hook_manager.add_for_all_hooks(
             Prometheus(self.app, {"app_name": "barterdude1"}, "/metrics1"),
             Prometheus(self.app, {"app_name": "barterdude2"}, "/metrics2"),
         )
 
     async def test_print_logs_redacted(self):
         hook_logging.BARTERDUDE_LOG_REDACTED = True
-        monitor = Monitor(hook_logging.Logging())
+        self.hook_manager.add_for_all_hooks(hook_logging.Logging())
         error = Exception("raise expected")
 
-        @self.app.consume_amqp([self.input_queue], monitor)
+        @self.app.consume_amqp([self.input_queue], self.hook_manager)
         async def handler(message):
             if message.body == self.messages[0]:
                 raise error
@@ -240,10 +248,10 @@ class TestBarterDude(TestCase):
 
     async def test_print_logs(self):
         hook_logging.BARTERDUDE_LOG_REDACTED = False
-        monitor = Monitor(hook_logging.Logging())
+        self.hook_manager.add_for_all_hooks(hook_logging.Logging())
         error = Exception("raise expected")
 
-        @self.app.consume_amqp([self.input_queue], monitor)
+        @self.app.consume_amqp([self.input_queue], self.hook_manager)
         async def handler(message):
             if message.body == self.messages[0]:
                 raise error

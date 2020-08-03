@@ -3,7 +3,8 @@ import asyncio
 
 from asynctest import TestCase
 from barterdude import BarterDude
-from barterdude.monitor import Monitor
+from barterdude.layer.manager import LayerManager
+from barterdude.hook_manager import HookManager
 from barterdude.hooks.logging import Logging
 from barterdude.hooks.requeue import Requeue
 from barterdude.hooks.retry import Retry
@@ -56,6 +57,8 @@ class RabbitMQConsumerTest(TestCase):
         self.schema = load_fixture("schema.json")
 
         self.app = BarterDude(hostname=self.rabbitmq_host)
+        layer_manager = LayerManager()
+        self.hook_manager = HookManager(layer_manager=layer_manager)
 
     async def tearDown(self):
         await self.app.shutdown()
@@ -97,10 +100,11 @@ class RabbitMQConsumerTest(TestCase):
     async def test_process_messages_successfully_with_validation(self):
         received_messages = set()
 
-        monitor = Monitor(SchemaValidation(self.schema))
+        self.hook_manager.add_for_all_hooks(
+            SchemaValidation(self.schema))
 
         @self.app.consume_amqp(
-            [self.input_queue], coroutines=1, monitor=monitor)
+            [self.input_queue], coroutines=1, hook_manager=self.hook_manager)
         async def handler(message):
             nonlocal received_messages
             received_messages.add(message.body["key"])
@@ -115,10 +119,10 @@ class RabbitMQConsumerTest(TestCase):
     async def test_process_messages_successfully_even_with_crashed_hook(self):
         received_messages = set()
 
-        monitor = Monitor(ErrorHook())
+        self.hook_manager.add_for_all_hooks(ErrorHook())
 
         @self.app.consume_amqp(
-            [self.input_queue], coroutines=1, monitor=monitor)
+            [self.input_queue], coroutines=1, hook_manager=self.hook_manager)
         async def handler(message):
             nonlocal received_messages
             received_messages.add(message.body["key"])
@@ -133,10 +137,10 @@ class RabbitMQConsumerTest(TestCase):
     async def test_not_process_messages_successfully_with_stop_hook(self):
         received_messages = set()
 
-        monitor = Monitor(StopHook())
+        self.hook_manager.add_for_all_hooks(StopHook())
 
         @self.app.consume_amqp(
-            [self.input_queue], coroutines=1, monitor=monitor)
+            [self.input_queue], coroutines=1, hook_manager=self.hook_manager)
         async def handler(message):
             nonlocal received_messages
             received_messages.add(message.body["key"])
@@ -214,11 +218,13 @@ class RabbitMQConsumerTest(TestCase):
     async def test_process_message_reject_with_requeue_hook(self):
         handler_called = 0
 
-        monitor = Monitor(Requeue(requeue_on_fail=True))
+        self.hook_manager.add_for_all_hooks(
+            Requeue(requeue_on_fail=True))
 
         @self.app.consume_amqp(
             [self.input_queue], requeue_on_fail=False,
-            bulk_flush_interval=1, coroutines=1, monitor=monitor)
+            bulk_flush_interval=1, coroutines=1,
+            hook_manager=self.hook_manager)
         async def handler(message):
             nonlocal handler_called
             handler_called += 1
@@ -236,10 +242,11 @@ class RabbitMQConsumerTest(TestCase):
     async def test_process_message_no_requeue_by_validation_with_requeue(self):
         handler_called = 0
 
-        monitor = Monitor(SchemaValidation(requeue_on_fail=False))
+        self.hook_manager.add_for_all_hooks(
+            SchemaValidation(requeue_on_fail=False))
 
         @self.app.consume_amqp(
-            [self.input_queue], monitor=monitor,
+            [self.input_queue], hook_manager=self.hook_manager,
             bulk_flush_interval=1, coroutines=1, requeue_on_fail=True)
         async def handler(messages):
             nonlocal handler_called
@@ -258,10 +265,11 @@ class RabbitMQConsumerTest(TestCase):
     async def test_process_message_reject_by_validation_without_requeue(self):
         handler_called = 0
 
-        monitor = Monitor(SchemaValidation(requeue_on_fail=False))
+        self.hook_manager.add_for_all_hooks(
+            SchemaValidation(requeue_on_fail=False))
 
         @self.app.consume_amqp(
-            [self.input_queue], monitor=monitor,
+            [self.input_queue], hook_manager=self.hook_manager,
             bulk_flush_interval=1, coroutines=1)
         async def handler(messages):
             nonlocal handler_called
@@ -280,10 +288,12 @@ class RabbitMQConsumerTest(TestCase):
     async def test_process_message_reject_by_validation_with_requeue(self):
         handler_called = 0
 
-        monitor = Monitor(SchemaValidation(requeue_on_fail=True))
+        self.hook_manager.add_for_all_hooks(
+            SchemaValidation(requeue_on_fail=True)
+        )
 
         @self.app.consume_amqp(
-            [self.input_queue], monitor=monitor,
+            [self.input_queue], hook_manager=self.hook_manager,
             bulk_flush_interval=1, coroutines=1)
         async def handler(messages):
             nonlocal handler_called
@@ -302,10 +312,12 @@ class RabbitMQConsumerTest(TestCase):
     async def test_process_message_reject_by_validation_before_handler(self):
         handler_called = 0
 
-        monitor = Monitor(SchemaValidation(self.schema))
+        self.hook_manager.add_for_all_hooks(
+            SchemaValidation(self.schema)
+        )
 
         @self.app.consume_amqp(
-            [self.input_queue], monitor=monitor)
+            [self.input_queue], hook_manager=self.hook_manager)
         async def handler(messages):
             nonlocal handler_called
             handler_called += 1
@@ -352,11 +364,13 @@ class RabbitMQConsumerTest(TestCase):
     async def test_process_message_with_retry(self):
         handler_called = 0
 
-        monitor = Monitor(Retry(max_tries=3, backoff_base_ms=2))
+        self.hook_manager.add_for_all_hooks(
+            Retry(max_tries=3, backoff_base_ms=2))
 
         @self.app.consume_amqp(
             [self.input_queue], requeue_on_fail=False,
-            bulk_flush_interval=1, coroutines=1, monitor=monitor)
+            bulk_flush_interval=1, coroutines=1,
+            hook_manager=self.hook_manager)
         async def handler(message):
             nonlocal handler_called
             handler_called += 1
@@ -371,11 +385,12 @@ class RabbitMQConsumerTest(TestCase):
         self.assertEqual(handler_called, 3)
 
     async def test_fails_to_connect_to_rabbitmq(self):
-        monitor = Monitor(Logging())
+
+        self.hook_manager.add_for_all_hooks(Logging())
 
         self.app = BarterDude(hostname="invalid_host")
 
-        @self.app.consume_amqp([self.input_queue], monitor)
+        @self.app.consume_amqp([self.input_queue], self.hook_manager)
         async def handler(message):
             pass
 

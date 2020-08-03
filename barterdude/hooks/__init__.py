@@ -1,6 +1,5 @@
 from aiohttp import web
 from abc import ABCMeta
-from barterdude import BarterDude
 from barterdude.message import Message
 
 
@@ -23,7 +22,7 @@ class BaseHook(metaclass=ABCMeta):
 
 
 class HttpHook(BaseHook):
-    def __init__(self, barterdude: BarterDude, path: str):
+    def __init__(self, barterdude, path: str):
         barterdude.add_endpoint(
             routes=[path],
             methods=["GET"],

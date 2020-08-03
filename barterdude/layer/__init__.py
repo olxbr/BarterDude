@@ -12,7 +12,7 @@ class Layer:
 
     @property
     def hooks(self):
-        return self._hooks
+        return tuple(self._hooks)
 
     def add(self, hook: BaseHook):
         self._hooks.append(hook)
