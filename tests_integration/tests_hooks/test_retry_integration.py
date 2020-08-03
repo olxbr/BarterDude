@@ -25,5 +25,5 @@ class TestRetryIntegration(TestBaseIntegration):
             routing_key=self.input_queue,
             data=self.messages[0]
         )
-        await asyncio.sleep(4)
+        await asyncio.sleep(2)
         self.assertEqual(handler_called, 3)

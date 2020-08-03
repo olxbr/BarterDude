@@ -1,7 +1,6 @@
 import asyncio
 
 from tests_integration import TestBaseIntegration
-from tests_integration.helpers import ErrorHook, StopHook
 
 from barterdude import BarterDude
 from barterdude.hooks.logging import Logging
@@ -23,42 +22,6 @@ class TestRabbitMQConsumer(TestBaseIntegration):
 
         for message in self.messages:
             self.assertTrue(message["key"] in received_messages)
-
-    async def test_process_messages_successfully_even_with_crashed_hook(self):
-        received_messages = set()
-
-        self.hook_manager.add_for_all_hooks(ErrorHook())
-
-        @self.app.consume_amqp(
-            [self.input_queue], coroutines=1, hook_manager=self.hook_manager)
-        async def handler(message):
-            nonlocal received_messages
-            received_messages.add(message.body["key"])
-
-        await self.app.startup()
-        await self.send_all_messages()
-        await asyncio.sleep(1)
-
-        for message in self.messages:
-            self.assertIn(message["key"], received_messages)
-
-    async def test_not_process_messages_successfully_with_stop_hook(self):
-        received_messages = set()
-
-        self.hook_manager.add_for_all_hooks(StopHook())
-
-        @self.app.consume_amqp(
-            [self.input_queue], coroutines=1, hook_manager=self.hook_manager)
-        async def handler(message):
-            nonlocal received_messages
-            received_messages.add(message.body["key"])
-
-        await self.app.startup()
-        await self.send_all_messages()
-        await asyncio.sleep(1)
-
-        for message in self.messages:
-            self.assertNotIn(message["key"], received_messages)
 
     async def test_process_one_message_and_publish(self):
         @self.app.consume_amqp([self.input_queue], coroutines=1)
