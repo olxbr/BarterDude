@@ -43,8 +43,7 @@ class BarterDude(MutableMapping):
         queues: Iterable[str],
         hook_manager: HookManager = HookManager(),
         coroutines: int = 10,
-        bulk_flush_interval: float = 60.0,
-        requeue_on_fail: bool = True
+        bulk_flush_interval: float = 60.0
     ):
         def decorator(f):
             async def process_message(message: Message):
@@ -52,7 +51,6 @@ class BarterDude(MutableMapping):
                 try:
                     await f(message)
                 except Exception as error:
-                    message.reject(requeue_on_fail)
                     await hook_manager.dispatch_on_fail(message, error)
                     raise StopFailFlowException(repr(error))
                 await hook_manager.dispatch_on_success(message)

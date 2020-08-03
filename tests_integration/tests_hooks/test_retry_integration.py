@@ -13,8 +13,7 @@ class TestRetryIntegration(TestBaseIntegration):
             Retry(max_tries=3, backoff_base_ms=2))
 
         @self.app.consume_amqp(
-            [self.input_queue], requeue_on_fail=False,
-            bulk_flush_interval=1, coroutines=1,
+            [self.input_queue], bulk_flush_interval=1, coroutines=1,
             hook_manager=self.hook_manager)
         async def handler(message):
             nonlocal handler_called
