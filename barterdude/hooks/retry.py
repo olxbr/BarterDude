@@ -17,9 +17,9 @@ class Retry(BaseHook):
     async def on_fail(self, message: Message, error: Exception):
         if not message.properties.headers:
             message.properties.headers = {}
-        fail_tries = message.properties.headers.get("fail_tries", 0)
+        fail_tries = message.properties.headers.get("x-fail-tries", 0)
         fail_tries += 1
-        message.properties.headers["fail_tries"] = fail_tries
+        message.properties.headers["x-fail-tries"] = fail_tries
         if self._max_tries == fail_tries:
             return message.reject(False)
         backoff = self._backoff ** fail_tries / 1000

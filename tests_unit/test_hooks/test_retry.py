@@ -15,7 +15,7 @@ class TestRetry(TestCase):
         with self.assertRaises(RestartFlowException):
             await retry.on_fail(self.rbmq_message, Exception())
         self.assertEqual(
-            self.rbmq_message.properties.headers["fail_tries"],
+            self.rbmq_message.properties.headers["x-fail-tries"],
             1
         )
 
@@ -24,7 +24,7 @@ class TestRetry(TestCase):
         await retry.on_fail(self.rbmq_message, Exception())
         self.rbmq_message.reject.assert_called_once_with(False)
         self.assertEqual(
-            self.rbmq_message.properties.headers["fail_tries"],
+            self.rbmq_message.properties.headers["x-fail-tries"],
             1
         )
 
@@ -35,7 +35,7 @@ class TestRetry(TestCase):
         await retry.on_fail(self.rbmq_message, Exception())
         self.rbmq_message.reject.assert_called_once_with(False)
         self.assertEqual(
-            self.rbmq_message.properties.headers["fail_tries"],
+            self.rbmq_message.properties.headers["x-fail-tries"],
             2
         )
 
