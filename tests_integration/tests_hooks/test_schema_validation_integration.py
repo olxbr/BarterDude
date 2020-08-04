@@ -36,7 +36,29 @@ class TestSchemaValidationIntegration(TestBaseIntegration):
         handler_called = 0
 
         self.hook_manager.add_for_all_hooks(
-            SchemaValidation(requeue_on_fail=False))
+            SchemaValidation(self.schema, requeue_on_fail=False))
+
+        @self.app.consume_amqp(
+            [self.input_queue], hook_manager=self.hook_manager,
+            bulk_flush_interval=1, coroutines=1)
+        async def handler(messages):
+            nonlocal handler_called
+            handler_called += 1
+
+        await self.app.startup()
+        await self.queue_manager.put(
+            routing_key=self.input_queue,
+            data={"wrong": "key"}
+        )
+        await asyncio.sleep(2)
+        self.assertEqual(handler_called, 0)
+
+    async def test_process_message_validation_without_requeue(self):
+        handler_called = 0
+
+        self.hook_manager.add_for_all_hooks(
+            SchemaValidation(requeue_on_fail=False)
+        )
 
         @self.app.consume_amqp(
             [self.input_queue], hook_manager=self.hook_manager,
@@ -55,7 +77,7 @@ class TestSchemaValidationIntegration(TestBaseIntegration):
         await asyncio.sleep(2)
         self.assertEqual(handler_called, 1)
 
-    async def test_process_message_reject_by_validation_with_requeue(self):
+    async def test_process_message_validation_with_requeue(self):
         handler_called = 0
 
         self.hook_manager.add_for_all_hooks(

@@ -1,14 +1,14 @@
-class StopFailFlowException(Exception):
+class FlowException(Exception):
     pass
 
 
-class StopSuccessFlowException(Exception):
+class StopFailFlowException(FlowException):
     pass
 
 
-class RestartFlowException(Exception):
+class StopSuccessFlowException(FlowException):
     pass
 
 
-ALL_FLOW = (
-    StopFailFlowException, StopSuccessFlowException, RestartFlowException)
+class RestartFlowException(FlowException):
+    pass

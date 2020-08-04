@@ -1,6 +1,6 @@
 from typing import Tuple, Callable, Optional, Any
 from traceback import format_tb
-from barterdude.exceptions import ALL_FLOW
+from barterdude.exceptions import FlowException
 from barterdude.hooks import BaseHook
 from asyncio import gather
 
@@ -12,7 +12,7 @@ class Runner:
                          error: Optional[Exception] = None):
         try:
             return await (method(subject, error) if error else method(subject))
-        except ALL_FLOW as e:
+        except FlowException as e:
             raise e
         except Exception as e:
             self._logger.error({
