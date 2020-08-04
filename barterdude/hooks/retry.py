@@ -20,9 +20,9 @@ class Retry(BaseHook):
         fail_tries = message.properties.headers.get("x-fail-tries", 0)
         fail_tries += 1
         message.properties.headers["x-fail-tries"] = fail_tries
-        if self._max_tries == fail_tries:
+        if self._max_tries <= fail_tries:
             return message.reject(False)
-        backoff = self._backoff ** fail_tries / 1000
+        backoff = self._backoff * (2 ** fail_tries) / 1000
         self._logger.debug(f"Waiting {backoff} seconds for retry...")
         await asyncio.sleep(backoff)
         raise RestartFlowException(f"Retrying for the {fail_tries} time")
