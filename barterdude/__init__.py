@@ -51,10 +51,8 @@ class BarterDude(MutableMapping):
                 try:
                     await f(message)
                 except Exception as error:
-                    await hook_manager.dispatch_on_fail(message, error)
-                    raise StopFailFlowException(repr(error))
-                await hook_manager.dispatch_on_success(message)
-                raise StopSuccessFlowException()
+                    return await hook_manager.dispatch_on_fail(message, error)
+                return await hook_manager.dispatch_on_success(message)
 
             flow = Flow(process_message)
 
