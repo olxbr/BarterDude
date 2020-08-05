@@ -14,7 +14,7 @@ class SchemaValidation(BaseHook):
         self._validate = bool(validation_schema)
         self._requeue_on_fail = requeue_on_fail
         resolver = jsonschema.RefResolver.from_schema(validation_schema)
-        self._builder = partial(
+        self._validator = partial(
             jsonschema.validate,
             schema=validation_schema,
             resolver=resolver
@@ -26,6 +26,6 @@ class SchemaValidation(BaseHook):
     async def before_consume(self, message: Message):
         if self._validate:
             try:
-                self._builder(message.body)
+                self._validator(message.body)
             except jsonschema.ValidationError as err:
                 raise StopFailFlowException(err)
