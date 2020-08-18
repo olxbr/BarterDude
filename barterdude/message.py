@@ -28,6 +28,10 @@ class Message:
     def properties(self):
         return self._message._amqp_message._properties
 
+    @property
+    def envelope(self):
+        return self._message._amqp_message._envelope
+
     def accept(self):
         return self._message.accept()
 
