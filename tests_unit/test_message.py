@@ -13,6 +13,8 @@ class TestMessage(TestCase):
         self.assertEqual(
             message.properties, rbmq_message._amqp_message._properties)
         self.assertEqual(
+            message.envelope, rbmq_message._amqp_message._envelope)
+        self.assertEqual(
             message.queue_name, rbmq_message._amqp_message.queue_name)
         self.assertEqual(message.raw, rbmq_message.serialized_data)
 
