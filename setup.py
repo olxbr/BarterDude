@@ -1,8 +1,6 @@
 from setuptools import setup, find_packages
 
-libs = [
-    "prometheus"
-]
+libs = []  # if need extra libs
 
 extra = {
     "all": [],

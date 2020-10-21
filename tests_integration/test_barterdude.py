@@ -77,6 +77,7 @@ class TestBarterDude(TestCase):
             pass
 
         await self.app.startup()
+
         await self.queue_manager.put(
             routing_key=self.input_queue,
             data=self.messages[0]
@@ -127,7 +128,7 @@ class TestBarterDude(TestCase):
 
     async def test_obtains_prometheus_metrics(self):
         labels = {"app_name": "barterdude_consumer"}
-        monitor = Monitor(Prometheus(self.app, labels))
+        monitor = Monitor(Prometheus(labels))
 
         @self.app.consume_amqp([self.input_queue], monitor)
         async def handler(message):
@@ -159,9 +160,13 @@ class TestBarterDude(TestCase):
             'barterdude_processing_message_seconds_count'
             '{app_name="barterdude_consumer",error="",state="success"} 1.0'
         ))
+        self.assertNotEqual(-1, text.find(
+            'asyncworker_http_requests_in_progress'
+            '{method="GET",path="/metrics"} 1.0'
+        ))
 
     async def test_obtains_prometheus_metrics_without_labels(self):
-        monitor = Monitor(Prometheus(self.app))
+        monitor = Monitor(Prometheus())
 
         @self.app.consume_amqp([self.input_queue], monitor)
         async def handler(message):
@@ -172,7 +177,7 @@ class TestBarterDude(TestCase):
             routing_key=self.input_queue,
             data=self.messages[0]
         )
-        await asyncio.sleep(1)
+        await asyncio.sleep(2)
 
         async with aiohttp.ClientSession() as session:
             timeout = aiohttp.ClientTimeout(total=1)
@@ -193,15 +198,6 @@ class TestBarterDude(TestCase):
             'barterdude_processing_message_seconds_count'
             '{error="",state="success"} 1.0'
         ))
-
-    async def test_register_multiple_prometheus_hooks(self):
-        """This test raised the following error:
-           ValueError: Duplicated timeseries in CollectorRegistry"""
-
-        Monitor(
-            Prometheus(self.app, {"app_name": "barterdude1"}, "/metrics1"),
-            Prometheus(self.app, {"app_name": "barterdude2"}, "/metrics2"),
-        )
 
     async def test_print_logs_redacted(self):
         hook_logging.BARTERDUDE_LOG_REDACTED = True
