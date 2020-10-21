@@ -166,40 +166,6 @@ class TestBarterDude(TestCase):
             '{method="GET",path="/metrics"} 1.0'
         ))
 
-    async def test_obtains_prometheus_metrics_without_labels(self):
-        monitor = Monitor(Prometheus(registry=CollectorRegistry()))
-
-        @self.app.consume_amqp([self.input_queue], monitor)
-        async def handler(message):
-            pass
-
-        await self.app.startup()
-        await self.queue_manager.put(
-            routing_key=self.input_queue,
-            data=self.messages[0]
-        )
-        await asyncio.sleep(2)
-
-        async with aiohttp.ClientSession() as session:
-            timeout = aiohttp.ClientTimeout(total=1)
-            url = f'http://{self.barterdude_host}:8080/metrics'
-            async with session.get(url, timeout=timeout) as response:
-                status_code = response.status
-                text = await response.text()
-
-        self.assertEqual(status_code, 200)
-        self.assertNotEqual(-1, text.find(
-            'barterdude_received_number_before_consume_messages_total 1.0'
-        ))
-        self.assertNotEqual(-1, text.find(
-            'barterdude_processing_message_seconds_bucket'
-            '{error="",le="0.025",state="success"} 1.0'
-        ))
-        self.assertNotEqual(-1, text.find(
-            'barterdude_processing_message_seconds_count'
-            '{error="",state="success"} 1.0'
-        ))
-
     async def test_print_logs_redacted(self):
         hook_logging.BARTERDUDE_LOG_REDACTED = True
         monitor = Monitor(hook_logging.Logging())
