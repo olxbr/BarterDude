@@ -15,7 +15,7 @@ BARTERDUDE_LOG_REDACTED = bool(int(os.environ.get(
 )))
 handler = logging.StreamHandler()
 handler.setFormatter(jsonlogger.JsonFormatter(
-    '(levelname) (name) (pathname) (lineno)',
+    '%(levelname)s %(name)s %(pathname)s %(lineno)s',
     timestamp=True
 ))
 default_logger = logging.getLogger(BARTERDUDE_DEFAULT_APP_NAME)

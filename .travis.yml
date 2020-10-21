@@ -1,13 +1,14 @@
 dist: xenial
 language: python
 python:
-  - "3.6"
-  - "3.7"
+  - "3.6-dev"
+  - "3.7-dev"
+  - "3.8-dev"
 
 # command to install dependencies
 install:
   - make setup
-  - pip install coveralls  # for coveralls
+  - pip install coveralls
 # command to run tests
 script:
   - make all-tests
