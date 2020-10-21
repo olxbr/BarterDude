@@ -8,6 +8,7 @@ from barterdude.monitor import Monitor
 from barterdude.hooks.healthcheck import Healthcheck
 from barterdude.hooks import logging as hook_logging
 from barterdude.hooks.metrics.prometheus import Prometheus
+from prometheus_client import CollectorRegistry
 from tests_unit.helpers import load_fixture
 from tests_integration.helpers import ErrorHook
 from asyncworker.connections import AMQPConnection
@@ -166,7 +167,7 @@ class TestBarterDude(TestCase):
         ))
 
     async def test_obtains_prometheus_metrics_without_labels(self):
-        monitor = Monitor(Prometheus())
+        monitor = Monitor(Prometheus(registry=CollectorRegistry()))
 
         @self.app.consume_amqp([self.input_queue], monitor)
         async def handler(message):
