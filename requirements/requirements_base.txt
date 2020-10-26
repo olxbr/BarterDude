@@ -1,4 +1,4 @@
-async-worker==0.14.0
+async-worker==0.15.1
 aioamqp==0.14.0
 python-json-logger==2.0.1
 jsonschema==3.2.0

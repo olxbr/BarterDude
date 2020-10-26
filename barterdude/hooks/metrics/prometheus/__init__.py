@@ -1,34 +1,21 @@
 import time
-from aiohttp import web
 from typing import Optional
 from asyncworker.rabbitmq.message import RabbitMQMessage
-from barterdude import BarterDude
-from barterdude.hooks import HttpHook
+from asyncworker.metrics.registry import REGISTRY
+from barterdude.hooks import BaseHook
 from barterdude.hooks.metrics.prometheus.definitions import Definitions
 from barterdude.hooks.metrics.prometheus.metrics import Metrics
-try:
-    from prometheus_client import (
-        CollectorRegistry,
-        generate_latest,
-        CONTENT_TYPE_LATEST,
-    )
-except ImportError:  # pragma: no cover
-    raise ImportError("""
-    Please install extra dependency with:
-        `pip install barterdude[prometheus]`
-    """)
+from prometheus_client import CollectorRegistry
 
 
-class Prometheus(HttpHook):
+class Prometheus(BaseHook):
 
     def __init__(
         self,
-        barterdude: BarterDude,
         labels: dict = {},
-        path: str = "/metrics",
         registry: CollectorRegistry = None
     ):
-        self.__registry = registry or CollectorRegistry()
+        self.__registry = registry or REGISTRY
         self.__labels = labels
         self.__metrics = Metrics(self.__registry)
         self.__definitions = Definitions(
@@ -36,7 +23,6 @@ class Prometheus(HttpHook):
         )
         self._msg_start = {}
         self.__definitions.save_metrics()
-        super(Prometheus, self).__init__(barterdude, path)
 
     @property
     def metrics(self):
@@ -76,11 +62,3 @@ class Prometheus(HttpHook):
         if self.__labels:
             metric = metric.labels(**self.__labels)
         metric.inc()
-
-    async def __call__(self, req: web.Request):
-        return web.Response(
-            content_type=CONTENT_TYPE_LATEST.split(";")[0],
-            charset=CONTENT_TYPE_LATEST.split("=")[-1],
-            body=generate_latest(self.__registry),
-            status=200,
-        )

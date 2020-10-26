@@ -14,12 +14,6 @@ Using Python 3.6+
 pip install barterdude
 ```
 
-if you want Prometheus integration, run the command:
-
-```sh
-pip install barterdude[prometheus] # or pip install barterdude[all]
-```
-
 ## Usage
 
 Build your consumer with this complete example:
@@ -51,7 +45,7 @@ labels = dict(
     team_name="my_team"
 )
 healthcheck = Healthcheck(barterdude) # automatic and customizable healthcheck
-prometheus = Prometheus(barterdude, labels) # automatic and customizable Prometheus integration
+prometheus = Prometheus(labels) # automatic and customizable Prometheus integration
 
 self.logger = getLogger("my_app", logging.DEBUG) # automatic json log with barterdude namespace
 # BARTERDUDE_DEFAULT_APP_NAME is an env var to control your project namespace

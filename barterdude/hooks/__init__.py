@@ -23,10 +23,15 @@ class BaseHook(metaclass=ABCMeta):
 
 
 class HttpHook(BaseHook):
-    def __init__(self, barterdude: BarterDude, path: str):
+    def __init__(
+            self,
+            barterdude: BarterDude,
+            path: str,
+            method: str = "GET"):
+
         barterdude.add_endpoint(
             routes=[path],
-            methods=["GET"],
+            methods=[method],
             hook=self.__call__
         )
 

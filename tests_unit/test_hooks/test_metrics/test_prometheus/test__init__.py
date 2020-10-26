@@ -15,30 +15,12 @@ from prometheus_client import (
 
 class TestPrometheus(TestCase):
     def setUp(self):
-        self.app = Mock()
         self.registry = Mock()
         self.labels = {"test": "my_test"}
         self.message = {"message": "test"}
         self.prometheus = Prometheus(
-            barterdude=self.app,
             labels=self.labels,
-            path="/metrics",
-            registry=self.registry,
-        )
-
-    @patch("barterdude.hooks.metrics.prometheus.generate_latest")
-    async def test_should_call_response_from_prometheus(self, mock):
-        mock.return_value = "test prometheus"
-        response = await self.prometheus(Mock())
-        mock.assert_called_once()
-        mock.assert_called_with(self.registry)
-        self.assertEqual(response.status, 200)
-        self.assertEqual(
-            response.content_type, "text/plain"
-        )
-        self.assertEqual(response.charset, "utf-8")
-        self.assertEqual(
-            response.body._value, bytes(mock.return_value, "utf-8")
+            registry=self.registry
         )
 
     @patch("barterdude.hooks.metrics.prometheus.Prometheus.metrics")
