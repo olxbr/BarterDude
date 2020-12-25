@@ -80,36 +80,32 @@ class RabbitMQConsumerTest(TestCase):
 
     async def test_process_messages_successfully(self):
         received_messages = set()
-        sync_event = Event()
 
         @self.app.consume_amqp([self.input_queue], coroutines=1)
         async def handler(message):
             nonlocal received_messages
             received_messages.add(message.body["key"])
-            sync_event.set()
 
         await self.app.startup()
         await self.send_all_messages()
 
-        await sync_event.wait()
+        await asyncio.sleep(1)
         for message in self.messages:
             self.assertTrue(message["key"] in received_messages)
 
     async def test_process_messages_successfully_with_validation(self):
         received_messages = set()
-        sync_event = Event()
 
         @self.app.consume_amqp(
             [self.input_queue], coroutines=1, validation_schema=self.schema)
         async def handler(message):
             nonlocal received_messages
             received_messages.add(message.body["key"])
-            sync_event.set()
 
         await self.app.startup()
         await self.send_all_messages()
 
-        await sync_event.wait()
+        await asyncio.sleep(1)
         for message in self.messages:
             self.assertTrue(message["key"] in received_messages)
 
@@ -311,7 +307,6 @@ class RabbitMQConsumerTest(TestCase):
         await self.app.startup()
         await self.send_all_messages()
         await asyncio.sleep(1)
-
 
         await first_sync.wait()
         for message in self.messages:
