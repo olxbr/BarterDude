@@ -1,18 +1,20 @@
-import os
-import aiohttp
 import asyncio
-
-from asynctest import TestCase
-from barterdude import BarterDude
-from barterdude.monitor import Monitor
-from barterdude.hooks.healthcheck import Healthcheck
-from barterdude.hooks import logging as hook_logging
-from barterdude.hooks.metrics.prometheus import Prometheus
-from tests_unit.helpers import load_fixture
-from tests_integration.helpers import ErrorHook
-from asyncworker.connections import AMQPConnection
+import os
+from asyncio import Event
 from random import choices
 from string import ascii_uppercase
+
+import aiohttp
+from asynctest import TestCase
+from asyncworker.connections import AMQPConnection
+from barterdude import BarterDude
+from barterdude.hooks import logging as hook_logging
+from barterdude.hooks.healthcheck import Healthcheck
+from barterdude.hooks.metrics.prometheus import Prometheus
+from barterdude.monitor import Monitor
+from tests_unit.helpers import load_fixture
+
+from tests_integration.helpers import ErrorHook
 
 
 class TestBarterDude(TestCase):
@@ -71,10 +73,11 @@ class TestBarterDude(TestCase):
 
     async def test_obtains_healthcheck(self):
         monitor = Monitor(Healthcheck(self.app))
+        sync_event = Event()
 
         @self.app.consume_amqp([self.input_queue], monitor)
         async def handler(message):
-            pass
+            sync_event.set()
 
         await self.app.startup()
 
@@ -82,8 +85,8 @@ class TestBarterDude(TestCase):
             routing_key=self.input_queue,
             data=self.messages[0]
         )
-        await asyncio.sleep(1)
 
+        await sync_event.wait()
         async with aiohttp.ClientSession() as session:
             timeout = aiohttp.ClientTimeout(total=1)
             url = f'http://{self.barterdude_host}:8080/healthcheck'
@@ -100,18 +103,19 @@ class TestBarterDude(TestCase):
 
     async def test_obtains_healthcheck_even_with_crashed_hook(self):
         monitor = Monitor(ErrorHook(), Healthcheck(self.app))
+        sync_event = Event()
 
         @self.app.consume_amqp([self.input_queue], monitor)
         async def handler(message):
-            pass
+            sync_event.set()
 
         await self.app.startup()
         await self.queue_manager.put(
             routing_key=self.input_queue,
             data=self.messages[0]
         )
-        await asyncio.sleep(1)
 
+        await sync_event.wait()
         async with aiohttp.ClientSession() as session:
             timeout = aiohttp.ClientTimeout(total=1)
             url = f'http://{self.barterdude_host}:8080/healthcheck'
@@ -129,18 +133,19 @@ class TestBarterDude(TestCase):
     async def test_obtains_prometheus_metrics(self):
         labels = {"app_name": "barterdude_consumer"}
         monitor = Monitor(Prometheus(labels))
+        sync_event = Event()
 
         @self.app.consume_amqp([self.input_queue], monitor)
         async def handler(message):
-            pass
+            sync_event.set()
 
         await self.app.startup()
         await self.queue_manager.put(
             routing_key=self.input_queue,
             data=self.messages[0]
         )
-        await asyncio.sleep(1)
 
+        await sync_event.wait()
         async with aiohttp.ClientSession() as session:
             timeout = aiohttp.ClientTimeout(total=1)
             url = f'http://{self.barterdude_host}:8080/metrics'
@@ -169,10 +174,12 @@ class TestBarterDude(TestCase):
         hook_logging.BARTERDUDE_LOG_REDACTED = True
         monitor = Monitor(hook_logging.Logging())
         error = Exception("raise expected")
+        sync_event = Event()
 
         @self.app.consume_amqp([self.input_queue], monitor)
         async def handler(message):
             if message.body == self.messages[0]:
+                sync_event.set()
                 raise error
 
         with self.assertLogs("barterdude") as cm:
@@ -181,6 +188,7 @@ class TestBarterDude(TestCase):
                 routing_key=self.input_queue,
                 data=self.messages[0]
             )
+            await sync_event.wait()
             await asyncio.sleep(1)
 
         key = self.messages[0]["key"]
@@ -204,10 +212,12 @@ class TestBarterDude(TestCase):
         hook_logging.BARTERDUDE_LOG_REDACTED = False
         monitor = Monitor(hook_logging.Logging())
         error = Exception("raise expected")
+        sync_event = Event()
 
         @self.app.consume_amqp([self.input_queue], monitor)
         async def handler(message):
             if message.body == self.messages[0]:
+                sync_event.set()
                 raise error
 
         with self.assertLogs("barterdude") as cm:
@@ -216,6 +226,7 @@ class TestBarterDude(TestCase):
                 routing_key=self.input_queue,
                 data=self.messages[0]
             )
+            await sync_event.wait()
             await asyncio.sleep(1)
 
         key = self.messages[0]["key"]

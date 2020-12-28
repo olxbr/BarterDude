@@ -1,16 +1,18 @@
-import os
 import asyncio
-
-from asynctest import TestCase
-from barterdude import BarterDude
-from barterdude.monitor import Monitor
-from barterdude.hooks.logging import Logging
-from barterdude.message import ValidationException
-from tests_unit.helpers import load_fixture
-from tests_integration.helpers import ErrorHook
-from asyncworker.connections import AMQPConnection
+import os
+from asyncio import Event
 from random import choices
 from string import ascii_uppercase
+
+from asynctest import TestCase
+from asyncworker.connections import AMQPConnection
+from barterdude import BarterDude
+from barterdude.hooks.logging import Logging
+from barterdude.message import ValidationException
+from barterdude.monitor import Monitor
+from tests_unit.helpers import load_fixture
+
+from tests_integration.helpers import ErrorHook
 
 
 class RabbitMQConsumerTest(TestCase):
@@ -86,8 +88,8 @@ class RabbitMQConsumerTest(TestCase):
 
         await self.app.startup()
         await self.send_all_messages()
-        await asyncio.sleep(1)
 
+        await asyncio.sleep(1)
         for message in self.messages:
             self.assertTrue(message["key"] in received_messages)
 
@@ -102,13 +104,14 @@ class RabbitMQConsumerTest(TestCase):
 
         await self.app.startup()
         await self.send_all_messages()
-        await asyncio.sleep(1)
 
+        await asyncio.sleep(1)
         for message in self.messages:
             self.assertTrue(message["key"] in received_messages)
 
     async def test_process_messages_successfully_even_with_crashed_hook(self):
         received_messages = set()
+        sync_event = Event()
 
         monitor = Monitor(ErrorHook())
 
@@ -117,15 +120,18 @@ class RabbitMQConsumerTest(TestCase):
         async def handler(message):
             nonlocal received_messages
             received_messages.add(message.body["key"])
+            sync_event.set()
 
         await self.app.startup()
         await self.send_all_messages()
-        await asyncio.sleep(1)
 
+        await sync_event.wait()
         for message in self.messages:
             self.assertTrue(message["key"] in received_messages)
 
     async def test_process_one_message_and_publish(self):
+        sync_event = Event()
+
         @self.app.consume_amqp([self.input_queue], coroutines=1)
         async def forward(message):
             await self.app.publish_amqp(
@@ -139,16 +145,18 @@ class RabbitMQConsumerTest(TestCase):
         async def handler(message):
             nonlocal received_message
             received_message = message.body
+            sync_event.set()
 
         await self.app.startup()
         await self.queue_manager.put(
             routing_key=self.input_queue,
             data=self.messages[0]
         )
-        await asyncio.sleep(1)
+        await sync_event.wait()
         self.assertEqual(received_message, self.messages[1])
 
     async def test_process_message_requeue_with_requeue(self):
+        sync_event = Event()
         handler_called = 0
 
         @self.app.consume_amqp([self.input_queue], coroutines=1)
@@ -157,16 +165,18 @@ class RabbitMQConsumerTest(TestCase):
             handler_called = handler_called + 1
             if handler_called < 2:
                 raise Exception()
+            sync_event.set()
 
         await self.app.startup()
         await self.queue_manager.put(
             routing_key=self.input_queue,
             data=self.messages[0]
         )
-        await asyncio.sleep(1)
+        await sync_event.wait()
         self.assertEqual(handler_called, 2)
 
     async def test_process_message_reject_with_requeue(self):
+        sync_event = Event()
         handler_called = 0
 
         @self.app.consume_amqp(
@@ -177,16 +187,18 @@ class RabbitMQConsumerTest(TestCase):
             handler_called = handler_called + 1
             if handler_called < 2:
                 raise Exception()
+            sync_event.set()
 
         await self.app.startup()
         await self.queue_manager.put(
             routing_key=self.input_queue,
             data=self.messages[0]
         )
-        await asyncio.sleep(2)
+        await sync_event.wait()
         self.assertEqual(handler_called, 2)
 
     async def test_process_message_reject_by_validation_with_requeue(self):
+        sync_event = Event()
         handler_called = 0
 
         @self.app.consume_amqp(
@@ -197,16 +209,18 @@ class RabbitMQConsumerTest(TestCase):
             handler_called = handler_called + 1
             if handler_called < 2:
                 raise ValidationException()
+            sync_event.set()
 
         await self.app.startup()
         await self.queue_manager.put(
             routing_key=self.input_queue,
             data=self.messages[0]
         )
-        await asyncio.sleep(2)
+        await sync_event.wait()
         self.assertEqual(handler_called, 2)
 
     async def test_process_message_reject_without_requeue(self):
+        sync_event = Event()
         handler_called = 0
 
         @self.app.consume_amqp(
@@ -216,6 +230,7 @@ class RabbitMQConsumerTest(TestCase):
             nonlocal handler_called
             handler_called = handler_called + 1
             if handler_called < 2:
+                sync_event.set()
                 raise Exception()
 
         await self.app.startup()
@@ -223,10 +238,11 @@ class RabbitMQConsumerTest(TestCase):
             routing_key=self.input_queue,
             data=self.messages[0]
         )
-        await asyncio.sleep(2)
+        await sync_event.wait()
         self.assertEqual(handler_called, 1)
 
     async def test_process_message_reject_by_validation_without_requeue(self):
+        sync_event = Event()
         handler_called = 0
 
         @self.app.consume_amqp(
@@ -235,6 +251,7 @@ class RabbitMQConsumerTest(TestCase):
             nonlocal handler_called
             handler_called = handler_called + 1
             if handler_called < 2:
+                sync_event.set()
                 raise ValidationException()
 
         await self.app.startup()
@@ -242,7 +259,7 @@ class RabbitMQConsumerTest(TestCase):
             routing_key=self.input_queue,
             data=self.messages[0]
         )
-        await asyncio.sleep(2)
+        await sync_event.wait()
         self.assertEqual(handler_called, 1)
 
     async def test_process_message_reject_by_validation_before_handler(self):
@@ -259,10 +276,12 @@ class RabbitMQConsumerTest(TestCase):
             routing_key=self.input_queue,
             data={"wrong": "key"}
         )
-        await asyncio.sleep(1)
         self.assertEqual(handler_called, 0)
 
     async def test_process_messages_and_requeue_only_one(self):
+        first_sync = Event()
+        second_sync = Event()
+
         first_read = set()
         second_read = set()
 
@@ -280,17 +299,20 @@ class RabbitMQConsumerTest(TestCase):
                 if message.body == self.messages[0]:
                     # process only messages[0] again
                     raise Exception()
+                first_sync.set()
             else:
                 second_read.add(value)
+                second_sync.set()
 
         await self.app.startup()
         await self.send_all_messages()
-
         await asyncio.sleep(1)
 
+        await first_sync.wait()
         for message in self.messages:
             self.assertTrue(message["key"] in first_read)
 
+        await first_sync.wait()
         self.assertSetEqual(second_read, {self.messages[0]["key"]})
 
     async def test_fails_to_connect_to_rabbitmq(self):
