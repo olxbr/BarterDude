@@ -1,7 +1,7 @@
-from aiohttp import web
 from abc import ABCMeta, abstractmethod
 from barterdude import BarterDude
 from asyncworker.rabbitmq.message import RabbitMQMessage
+from asyncworker.http.wrapper import RequestWrapper
 
 
 class BaseHook(metaclass=ABCMeta):
@@ -35,7 +35,7 @@ class HttpHook(BaseHook):
             hook=self.__call__
         )
 
-    async def __call__(self, req: web.Request):
+    async def __call__(self, req: RequestWrapper):
         raise NotImplementedError
 
     async def on_success(self, message: RabbitMQMessage):

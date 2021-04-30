@@ -3,6 +3,7 @@ import json
 from barterdude import BarterDude
 from barterdude.hooks import HttpHook
 from asyncworker.rabbitmq.message import RabbitMQMessage
+from asyncworker.http.wrapper import RequestWrapper
 from aiohttp import web
 from time import time
 from collections import deque
@@ -54,7 +55,7 @@ class Healthcheck(HttpHook):
     async def on_connection_fail(self, error: Exception, retries: int):
         self.__connection_fails = retries
 
-    async def __call__(self, req: web.Request):
+    async def __call__(self, req: RequestWrapper):
         if self.__force_fail:
             return _response(500, {
                 "message": "Healthcheck fail called manually"
