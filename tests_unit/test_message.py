@@ -77,3 +77,9 @@ class TestMessageValidation(TestCase):
             validation(self.rbmq_message)
         with self.assertRaises(ValidationException):
             validation.validate(self.rbmq_message)
+
+    def test_should_raise_error_with_invalid_json(self):
+        self.rbmq_message.body = {"key": None}
+        validation = MessageValidation()
+        with self.assertRaises(ValidationException):
+            validation.validate(self.rbmq_message)

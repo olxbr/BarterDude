@@ -1,6 +1,8 @@
 import json
 from traceback import format_tb
 from asyncworker.rabbitmq.message import RabbitMQMessage
+from asyncworker.easyqueue.exceptions import UndecodableMessageException
+
 
 from barterdude.conf import (
     getLogger,
@@ -25,7 +27,10 @@ class Logging(BaseHook):
     def _add_message_body(
             self, log_message: dict, message: RabbitMQMessage) -> dict:
         if not BARTERDUDE_LOG_REDACTED:
-            log_message["message_body"] = json.dumps(message.body)
+            try:
+                log_message["message_body"] = json.dumps(message.body)
+            except UndecodableMessageException:
+                pass
         return log_message
 
     async def before_consume(self, message: RabbitMQMessage):
