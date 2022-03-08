@@ -51,7 +51,7 @@ class TestBarterDude(TestCase):
 
         self.messages = []
         for i in range(10):
-            message = {"key": "".join(choices(ascii_uppercase, k=16))}
+            message = {"key": "".join(choices(ascii_uppercase, k=16))}  # nosec
             self.messages.append(message)
 
         self.schema = load_fixture("schema.json")
