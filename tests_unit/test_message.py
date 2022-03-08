@@ -1,7 +1,8 @@
+import json
 from asynctest import TestCase, Mock
 from asyncworker.rabbitmq.message import RabbitMQMessage
-from barterdude.message import (
-    Message, MessageValidation, ValidationException)
+from asyncworker.easyqueue.message import AMQPMessage
+from barterdude.message import Message, MessageValidation, ValidationException
 from tests_unit.helpers import load_fixture
 
 
@@ -11,11 +12,14 @@ class TestMessage(TestCase):
         message = Message(rbmq_message)
         self.assertEqual(message.body, rbmq_message.body)
         self.assertEqual(
-            message.properties, rbmq_message._amqp_message._properties)
+            message.properties, rbmq_message._amqp_message._properties
+        )
         self.assertEqual(
-            message.envelope, rbmq_message._amqp_message._envelope)
+            message.envelope, rbmq_message._amqp_message._envelope
+        )
         self.assertEqual(
-            message.queue_name, rbmq_message._amqp_message.queue_name)
+            message.queue_name, rbmq_message._amqp_message.queue_name
+        )
         self.assertEqual(message.raw, rbmq_message.serialized_data)
 
     async def test_should_call_rbmq_methods(self):
@@ -79,7 +83,23 @@ class TestMessageValidation(TestCase):
             validation.validate(self.rbmq_message)
 
     def test_should_raise_error_with_invalid_json(self):
-        self.rbmq_message.body = {"key": None}
+        def deserialize(body: bytes):
+            json.loads(body.decode())
+
+        rbmq_message = RabbitMQMessage(
+            1,
+            AMQPMessage(
+                connection=None,
+                channel=None,
+                queue_name=None,
+                serialized_data=bytes('{"invalid": "json"', "utf-8"),
+                delivery_tag=None,
+                envelope=None,
+                properties=None,
+                deserialization_method=deserialize,
+                queue=None
+            ),
+        )
         validation = MessageValidation()
         with self.assertRaises(ValidationException):
-            validation.validate(self.rbmq_message)
+            validation.validate(rbmq_message)
