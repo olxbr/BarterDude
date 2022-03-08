@@ -24,7 +24,7 @@ jobs:
           python-version: 3.7
 
       - name: Install project dependencies
-        run: make install
+        run: make setup
 
       - name: Run security check
         run: make check-sec
