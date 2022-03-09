@@ -30,7 +30,8 @@ class Logging(BaseHook):
             try:
                 log_message["message_body"] = json.dumps(message.body)
             except UndecodableMessageException:
-                pass
+                log_message["message_body_error"] = \
+                    'Could not read message body. Invalid JSON'
         return log_message
 
     async def before_consume(self, message: RabbitMQMessage):
