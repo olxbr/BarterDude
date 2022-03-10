@@ -45,8 +45,7 @@ jobs:
           python-version: 3.7
 
       - name: Install project dependencies
-        run: make install
-        run: python3 -m pip install build
+        run: make install && python3 -m pip install build
 
       - name: Build package
         run: python3 -m build

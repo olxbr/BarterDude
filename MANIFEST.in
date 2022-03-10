@@ -1,3 +1,5 @@
 include README.md
 recursive-include . barterdude/**
 recursive-include . requirements/*
+prune tests_unit
+prune tests_integration
