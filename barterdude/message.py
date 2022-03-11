@@ -2,6 +2,7 @@ import jsonschema
 from functools import partial
 from typing import Optional, Union
 from asyncworker.rabbitmq.message import RabbitMQMessage
+from asyncworker.easyqueue.exceptions import UndecodableMessageException
 
 
 class ValidationException(jsonschema.ValidationError):
@@ -56,11 +57,13 @@ class MessageValidation:
         )
 
     def validate(self, message: Union[RabbitMQMessage, Message]):
-        if self._validate:
-            try:
-                self._builder(message.body)
-            except jsonschema.ValidationError as err:
-                raise ValidationException(err)
+        try:
+            body = message.body
+            if self._validate:
+                self._builder(body)
+        except (jsonschema.ValidationError,
+                UndecodableMessageException) as err:
+            raise ValidationException(err)
 
     def __call__(self, message: RabbitMQMessage):
         self.validate(message)
