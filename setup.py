@@ -1,3 +1,4 @@
+import os
 from setuptools import setup, find_packages
 
 libs = []  # if need extra libs
@@ -20,7 +21,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name="barterdude",
-    version="DYNAMIC",
+    version=os.getenv('RELEASE_VERSION') if os.getenv('RELEASE_VERSION') else os.getenv('GITHUB_REF_NAME', 'DYNAMIC'),
     description="Message exchange engine to build pipelines using brokers like RabbitMQ",
     long_description=long_description,
     long_description_content_type="text/markdown",
