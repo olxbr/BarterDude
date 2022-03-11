@@ -21,7 +21,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name="barterdude",
-    version=os.getenv('RELEASE_VERSION') if os.getenv('RELEASE_VERSION') else '1.0.1',
+    version=os.getenv('RELEASE_VERSION', 'DYNAMIC'),
     description="Message exchange engine to build pipelines using brokers like RabbitMQ",
     long_description=long_description,
     long_description_content_type="text/markdown",
