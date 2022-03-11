@@ -49,12 +49,9 @@ jobs:
       - name: Install project dependencies
         run: make install && python3 -m pip install build
 
-      - name: Setup release version
-        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
-
       - name: Build package
         env:
-          RELEASE_VERSION: ${{ steps.vars.outputs.tag }}
+          RELEASE_VERSION: ${{ steps.release.outputs.version }}
         run: python3 -m build
 
       - name: Publish package to PyPI
