@@ -1,4 +1,5 @@
 import json
+import pytest
 from asynctest import TestCase, Mock
 from asyncworker.rabbitmq.message import RabbitMQMessage
 from asyncworker.easyqueue.message import AMQPMessage
@@ -101,5 +102,6 @@ class TestMessageValidation(TestCase):
             ),
         )
         validation = MessageValidation()
-        with self.assertRaises(ValidationException):
+        with pytest.raises(ValidationException) as error:
             validation.validate(rbmq_message)
+        assert str(error.value.message) == "msg couldn't be decoded as JSON"
