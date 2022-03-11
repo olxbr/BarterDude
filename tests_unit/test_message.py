@@ -104,4 +104,5 @@ class TestMessageValidation(TestCase):
         validation = MessageValidation()
         with pytest.raises(ValidationException) as error:
             validation.validate(rbmq_message)
-        assert str(error.value.message) == "msg couldn't be decoded as JSON"
+        self.assertEqual(str(error.value.message),
+                         "msg couldn't be decoded as JSON")
