@@ -33,6 +33,7 @@ jobs:
         uses: olxbr/code-quality-action@v1
 
   build-and-publish:
+    needs: [quality]
     runs-on: ubuntu-latest
 
     steps:
