@@ -52,7 +52,7 @@ jobs:
       - name: Build package
         env:
           RELEASE_VERSION: ${{ steps.release.outputs.version }}
-        run: python3 -m build
+        run: python3 -m build -s
 
       - name: Publish package to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
