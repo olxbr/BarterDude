@@ -52,7 +52,7 @@ jobs:
       - name: Build package
         env:
           # RELEASE_VERSION: ${{ steps.release.outputs.version }}
-          RELEASE_VERSION: github.event.pull_request.head.sha
+          RELEASE_VERSION: ${{ github.event.pull_request.head.sha }}
         run: python3 -m build -s
 
       - name: Publish package to TestPyPI
