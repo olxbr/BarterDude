@@ -46,12 +46,14 @@ jobs:
         with:
           python-version: 3.7
 
-      - name: Install project dependencies
-        run: make install && python3 -m pip install build
-
       - name: Choose tag or commit as version
         id: release
         uses: olxbr/tag-or-commit-action@v0.0.10
+
+      - name: Install project dependencies
+        env:
+          RELEASE_VERSION: ${{ steps.release.outputs.version }}
+        run: make install && python3 -m pip install build
 
       - name: Build package
         env:
