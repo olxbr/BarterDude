@@ -33,7 +33,7 @@ jobs:
         uses: olxbr/code-quality-action@v1
 
   build-and-publish-dev:
-    if: startsWith( github.ref, 'refs/tags/' )
+    # if: startsWith( github.ref, 'refs/tags/' )
     needs: [quality]
     runs-on: ubuntu-latest
     environment: 'dev'
