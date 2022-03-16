@@ -57,15 +57,13 @@ jobs:
         run: make install && python3 -m pip install build
 
       - name: Build package
-        env:
-          RELEASE_VERSION: ${{ steps.release.outputs.version }}
         run: python3 -m build -s
 
       - name: Publish artifact
         uses: actions/upload-artifact@v2
         with:
-          name: barterdude-{{ steps.release.outputs.version }}.tar.gz
-          path: './dist/barterdude-{{ steps.release.outputs.version }}.tar.gz'
+          name: barterdude-${{ steps.release.outputs.version }}.tar.gz
+          path: 'dist/barterdude-${{ steps.release.outputs.version }}.tar.gz'
 
       - name: Publish package to TestPyPI
         uses: pypa/gh-action-pypi-publish@release/v1
@@ -88,8 +86,8 @@ jobs:
       - name: Download artifact
         uses: actions/download-artifact@v2
         with:
-          name: barterdude-{{ steps.release.outputs.version }}.tar.gz
-          path: './dist/barterdude-{{ steps.release.outputs.version }}.tar.gz'
+          name: barterdude-${{ steps.release.outputs.version }}.tar.gz
+          path: 'dist/barterdude-${{ steps.release.outputs.version }}.tar.gz'
 
       - name: Publish package to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1

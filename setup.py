@@ -1,4 +1,3 @@
-import os
 from setuptools import setup, find_packages
 
 libs = []  # if need extra libs
@@ -21,7 +20,6 @@ with open("README.md", "r") as fh:
 
 setup(
     name="barterdude",
-    version=os.getenv('RELEASE_VERSION'),
     description="Message exchange engine to build pipelines using brokers like RabbitMQ",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -30,6 +28,8 @@ setup(
     include_package_data=True,
     url='https://github.com/olxbr/BarterDude/',
     download_url='https://github.com/olxbr/BarterDude/archive/master.zip',
+    use_scm_version=True,
+    setup_requires=['setuptools_scm'],
     install_requires=requirements,
     extras_require=extra,
     classifiers=[
