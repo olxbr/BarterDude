@@ -32,7 +32,7 @@ jobs:
       - name: Run code quality
         uses: olxbr/code-quality-action@v1
 
-  build-dev:
+  build-and-publish-dev:
     needs: [quality]
     runs-on: ubuntu-latest
     environment: 'dev'
@@ -58,55 +58,39 @@ jobs:
       - name: Build package
         run: python3 -m build -s
 
-      - name: Create file
-        run: touch test.txt
-
-      - name: Publish artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: test.txt
-          path: 'dist/test.txt'
-
-  publish-dev:
-    needs: [quality, build-dev]
-    runs-on: ubuntu-latest
-    environment: 'dev'
-
-    steps:
-      - name: Choose tag or commit as version
-        id: release
-        uses: olxbr/tag-or-commit-action@v0.0.10
-
-      - name: Download artifact
-        uses: actions/download-artifact@v2
-        with:
-          name: test.txt
-          path: dist/test.txt
-
       - name: Publish package to TestPyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__
           password: ${{ secrets.TEST_PYPI_API_TOKEN }}
           repository_url: https://test.pypi.org/legacy/
-          packages_dir: github/workspace/dist/barterdude-${{ steps.release.outputs.version }}.tar.gz
 
   publish-prod:
     if: startsWith( github.ref, 'refs/tags/' )
-    needs: [quality, publish-dev]
+    needs: [quality, build-and-publish-dev]
     runs-on: ubuntu-latest
     environment: 'prod'
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Setup python 3.7
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+
       - name: Choose tag or commit as version
         id: release
         uses: olxbr/tag-or-commit-action@v0.0.10
 
-      - name: Download artifact
-        uses: actions/download-artifact@v2
-        with:
-          name: barterdude-${{ steps.release.outputs.version }}.tar.gz
-          path: 'dist/barterdude-${{ steps.release.outputs.version }}.tar.gz'
+      - name: Install project dependencies
+        env:
+          RELEASE_VERSION: ${{ steps.release.outputs.version }}
+        run: make install && python3 -m pip install build
+
+      - name: Build package
+        run: python3 -m build -s
 
       - name: Publish package to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
