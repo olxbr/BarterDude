@@ -47,23 +47,11 @@ jobs:
         with:
           python-version: 3.7
 
-      - name: Choose tag or commit as version
-        id: release
-        uses: olxbr/tag-or-commit-action@v0.0.10
-
       - name: Install project dependencies
-        env:
-          RELEASE_VERSION: ${{ steps.release.outputs.version }}
         run: make install && python3 -m pip install build
 
       - name: Build package
         run: python3 -m build -s
-
-      - name: Publish artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: barterdude-${{ steps.release.outputs.version }}.tar.gz
-          path: 'dist/barterdude-${{ steps.release.outputs.version }}.tar.gz'
 
       - name: Publish package to TestPyPI
         uses: pypa/gh-action-pypi-publish@release/v1
@@ -79,15 +67,19 @@ jobs:
     environment: 'prod'
 
     steps:
-      - name: Choose tag or commit as version
-        id: release
-        uses: olxbr/tag-or-commit-action@v0.0.10
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-      - name: Download artifact
-        uses: actions/download-artifact@v2
+      - name: Setup python 3.7
+        uses: actions/setup-python@v2
         with:
-          name: barterdude-${{ steps.release.outputs.version }}.tar.gz
-          path: 'dist/barterdude-${{ steps.release.outputs.version }}.tar.gz'
+          python-version: 3.7
+
+      - name: Install project dependencies
+        run: make install && python3 -m pip install build
+
+      - name: Build package
+        run: python3 -m build -s
 
       - name: Publish package to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
