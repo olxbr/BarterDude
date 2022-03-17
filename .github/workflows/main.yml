@@ -65,7 +65,7 @@ jobs:
           path: 'dist/barterdude-${{ steps.release.outputs.version }}.tar.gz'
 
   publish-dev:
-    needs: [quality]
+    needs: [quality, build-dev]
     runs-on: ubuntu-latest
     environment: 'dev'
 
