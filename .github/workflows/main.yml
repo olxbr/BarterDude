@@ -89,7 +89,7 @@ jobs:
 
   publish-prod:
     if: startsWith( github.ref, 'refs/tags/' )
-    needs: [quality, build-and-publish-dev]
+    needs: [quality, publish-dev]
     runs-on: ubuntu-latest
     environment: 'prod'
 
