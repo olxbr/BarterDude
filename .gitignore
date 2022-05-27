@@ -129,4 +129,4 @@ dmypy.json
 .pyre/
 
 # Editors
-.vscode
+.vscode!.github/*
