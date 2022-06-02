@@ -167,6 +167,52 @@ async def consumer_access_storage(msg):
     data = baterdude["my_variable"]
 ```
 
+### Monitoring extra modules on Healthcheck
+
+If you run extra modules on your application, like workers or services, you can include them in the healthcheck.
+
+First, you need to update your module to implement the interface `HealthcheckMonitored`:
+```python
+from barterdude.hooks.healthcheck import HealthcheckMonitored
+
+class ExtraService(HealthcheckMonitored):
+```
+
+Implementing that interface will require the definition of the method `healthcheck` in your module. It should return a boolean value indicating if your module is healhty or not:
+```python
+    def healthcheck(self):
+        return self._thread.is_alive()
+```
+
+Finally, you need to make the BarterDude and Healthcheck module be aware of your module. To do so, you'll use the Data Sharing feature:
+```python
+from barterdude import BarterDude
+from app.extra_service import ExtraService
+
+barterdude = BarterDude()
+barterdude["extra_service"] = ExtraService()
+```
+
+If you are already running your extra modules on BartedDude startup using the data shareing model, it's all done:
+```python
+@app.run_on_startup
+async def startup(app):
+    app["client_session"] = ClientSession()
+    app["extra_service"] = ExtraService()
+```
+
+The healthcheck module will identify all shared modules that implement the interface `HealthcheckMonitored` and run its healthcheck method automatically.
+The result of all monitored modules will be included in the result body of the healthcheck endpoint and if any of the modules fail, the healthcheck endpoint will indicate that:
+```json
+{
+    "extra_service": "ok",
+    "message": "Success rate: 1.0 (expected: 0.9)",
+    "fail": 0,
+    "success": 1,
+    "status": "ok"
+}
+```
+
 ### Schema Validation
 
 Consumed messages can be validated by json schema:

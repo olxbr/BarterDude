@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 import json
 
 from barterdude import BarterDude
@@ -20,6 +21,10 @@ def _response(status, body):
     body["status"] = "ok" if status == 200 else "fail"
     return web.Response(status=status, body=json.dumps(body))
 
+class HealthcheckMonitored(ABC):
+    @abstractmethod
+    def healthcheck(self):
+        pass
 
 class Healthcheck(HttpHook):
     def __init__(
@@ -30,6 +35,7 @@ class Healthcheck(HttpHook):
         health_window: float = 60.0,  # seconds
         max_connection_fails: int = 3
     ):
+        self.__barterdude = barterdude
         self.__success_rate = success_rate
         self.__health_window = health_window
         self.__success = deque()
@@ -68,18 +74,37 @@ class Healthcheck(HttpHook):
                 )
             })
 
+        response = {}
+        status = 200
+
+        all_monitored_modules_passed = True
+        for module in self.__barterdude:
+            if isinstance(self.__barterdude[module], HealthcheckMonitored):
+                passed = self.__barterdude[module].healthcheck()
+                response[module] = "ok" if passed else "fail"
+                all_monitored_modules_passed &= passed
+
+        if not all_monitored_modules_passed:
+            status = 500
+
         old_timestamp = time() - self.__health_window
         success = _remove_old(self.__success, old_timestamp)
         fail = _remove_old(self.__fail, old_timestamp)
+
         if success == 0 and fail == 0:
-            return _response(200, {
-                "message": f"No messages in last {self.__health_window}s"
-            })
+            response["message"] = f"No messages in last {self.__health_window}s"
+            return _response(status, response)
 
         rate = success / (success + fail)
-        return _response(200 if rate >= self.__success_rate else 500, {
+
+        if rate < self.__success_rate:
+            status = 500
+
+        response.update({
             "message":
                 f"Success rate: {rate} (expected: {self.__success_rate})",
             "fail": fail,
             "success": success
         })
+
+        return _response(status, response)
