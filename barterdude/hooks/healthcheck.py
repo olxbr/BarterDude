@@ -21,10 +21,12 @@ def _response(status, body):
     body["status"] = "ok" if status == 200 else "fail"
     return web.Response(status=status, body=json.dumps(body))
 
+
 class HealthcheckMonitored(ABC):
     @abstractmethod
     def healthcheck(self):
         pass
+
 
 class Healthcheck(HttpHook):
     def __init__(
@@ -92,7 +94,9 @@ class Healthcheck(HttpHook):
         fail = _remove_old(self.__fail, old_timestamp)
 
         if success == 0 and fail == 0:
-            response["message"] = f"No messages in last {self.__health_window}s"
+            response["message"] = (
+                f"No messages in last {self.__health_window}s"
+            )
             return _response(status, response)
 
         rate = success / (success + fail)

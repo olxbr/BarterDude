@@ -6,6 +6,7 @@ from barterdude.hooks.healthcheck import Healthcheck, HealthcheckMonitored
 class HealthcheckMonitoredMock(HealthcheckMonitored):
     def __init__(self, healthy=True):
         self.healthy = healthy
+
     def healthcheck(self):
         return self.healthy
 
@@ -20,7 +21,9 @@ class TestHealthcheck(TestCase):
         self.app = MagicMock()
         self.monitoredModules = {}
         self.app.__iter__.side_effect = lambda: iter(self.monitoredModules)
-        self.app.__getitem__.side_effect = lambda module: self.monitoredModules[module]
+        self.app.__getitem__.side_effect = (
+            lambda module: self.monitoredModules[module]
+        )
         self.healthcheck = Healthcheck(
             self.app,
             "/healthcheck",
@@ -119,7 +122,7 @@ class TestHealthcheck(TestCase):
             '{"message": "Reached max connection fails (3)", "status": "fail"}'
         )
 
-    async def test_should_pass_healthcheck_when_has_one_healthy_monitored_module(self):
+    async def test_should_pass_when_has_one_healthy_monitored_module(self):
         self.monitoredModules = {
             "testModule": HealthcheckMonitoredMock(True)
         }
@@ -128,10 +131,11 @@ class TestHealthcheck(TestCase):
         self.assertEqual(response.content_type, "text/plain")
         self.assertEqual(
             response.body._value.decode('utf-8'),
-            '{"testModule": "ok", "message": "No messages in last 60.0s", "status": "ok"}'
+            '{"testModule": "ok", '
+            '"message": "No messages in last 60.0s", "status": "ok"}'
         )
 
-    async def test_should_pass_healthcheck_when_has_two_healthy_monitored_module(self):
+    async def test_should_pass_when_has_two_healthy_monitored_module(self):
         self.monitoredModules = {
             "testModule1": HealthcheckMonitoredMock(True),
             "testModule2": HealthcheckMonitoredMock(True)
@@ -141,10 +145,11 @@ class TestHealthcheck(TestCase):
         self.assertEqual(response.content_type, "text/plain")
         self.assertEqual(
             response.body._value.decode('utf-8'),
-            '{"testModule1": "ok", "testModule2": "ok", "message": "No messages in last 60.0s", "status": "ok"}'
+            '{"testModule1": "ok", "testModule2": "ok", '
+            '"message": "No messages in last 60.0s", "status": "ok"}'
         )
 
-    async def test_should_fail_healthcheck_when_has_one_failing_monitored_module(self):
+    async def test_should_fail_when_has_one_failing_monitored_module(self):
         self.monitoredModules = {
             "testModule": HealthcheckMonitoredMock(False)
         }
@@ -153,10 +158,11 @@ class TestHealthcheck(TestCase):
         self.assertEqual(response.content_type, "text/plain")
         self.assertEqual(
             response.body._value.decode('utf-8'),
-            '{"testModule": "fail", "message": "No messages in last 60.0s", "status": "fail"}'
+            '{"testModule": "fail", '
+            '"message": "No messages in last 60.0s", "status": "fail"}'
         )
 
-    async def test_should_fail_healthcheck_when_has_two_failing_monitored_module(self):
+    async def test_should_fail_when_has_two_failing_monitored_module(self):
         self.monitoredModules = {
             "testModule1": HealthcheckMonitoredMock(False),
             "testModule2": HealthcheckMonitoredMock(False)
@@ -166,10 +172,11 @@ class TestHealthcheck(TestCase):
         self.assertEqual(response.content_type, "text/plain")
         self.assertEqual(
             response.body._value.decode('utf-8'),
-            '{"testModule1": "fail", "testModule2": "fail", "message": "No messages in last 60.0s", "status": "fail"}'
+            '{"testModule1": "fail", "testModule2": "fail", '
+            '"message": "No messages in last 60.0s", "status": "fail"}'
         )
 
-    async def test_should_fail_healthcheck_when_has_failing_and_healthy_monitored_modules(self):
+    async def test_should_fail_when_has_failing_and_healthy_modules(self):
         self.monitoredModules = {
             "testModule1": HealthcheckMonitoredMock(False),
             "testModule2": HealthcheckMonitoredMock(True)
@@ -179,10 +186,11 @@ class TestHealthcheck(TestCase):
         self.assertEqual(response.content_type, "text/plain")
         self.assertEqual(
             response.body._value.decode('utf-8'),
-            '{"testModule1": "fail", "testModule2": "ok", "message": "No messages in last 60.0s", "status": "fail"}'
+            '{"testModule1": "fail", "testModule2": "ok", '
+            '"message": "No messages in last 60.0s", "status": "fail"}'
         )
 
-    async def test_should_pass_healthcheck_when_has_one_healthy_monitored_module_and_messages(self):
+    async def test_should_pass_when_has_one_healthy_module_and_messages(self):
         self.monitoredModules = {
             "testModule": HealthcheckMonitoredMock(True)
         }
@@ -192,11 +200,12 @@ class TestHealthcheck(TestCase):
         self.assertEqual(response.content_type, "text/plain")
         self.assertEqual(
             response.body._value.decode('utf-8'),
-            '{"testModule": "ok", "message": "Success rate: 1.0 (expected: 0.9)", '
+            '{"testModule": "ok", '
+            '"message": "Success rate: 1.0 (expected: 0.9)", '
             '"fail": 0, "success": 1, "status": "ok"}'
         )
 
-    async def test_should_pass_healthcheck_when_has_one_failing_monitored_module_and_messages(self):
+    async def test_should_pass_when_has_one_failing_module_and_messages(self):
         self.monitoredModules = {
             "testModule": HealthcheckMonitoredMock(False)
         }
@@ -206,7 +215,8 @@ class TestHealthcheck(TestCase):
         self.assertEqual(response.content_type, "text/plain")
         self.assertEqual(
             response.body._value.decode('utf-8'),
-            '{"testModule": "fail", "message": "Success rate: 1.0 (expected: 0.9)", '
+            '{"testModule": "fail", '
+            '"message": "Success rate: 1.0 (expected: 0.9)", '
             '"fail": 0, "success": 1, "status": "fail"}'
         )
 
