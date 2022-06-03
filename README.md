@@ -193,7 +193,7 @@ barterdude = BarterDude()
 barterdude["extra_service"] = ExtraService()
 ```
 
-If you are already running your extra modules on BartedDude startup using the data shareing model, it's all done:
+If you are already running your extra modules on BartedDude startup using the data sharing model, it's all done:
 ```python
 @app.run_on_startup
 async def startup(app):
