@@ -1,12 +1,16 @@
+import json
+from aiohttp import web
 from asyncio import gather
 from asyncworker import App, RouteTypes
 from asyncworker.options import Options
 from asyncworker.connections import AMQPConnection
 from asyncworker.rabbitmq.message import RabbitMQMessage
 from collections import MutableMapping
-from typing import Iterable, Optional
+from typing import Iterable, Optional, Callable
 from barterdude.monitor import Monitor
 from barterdude.message import MessageValidation, ValidationException
+from barterdude.mocks import RabbitMQMessageMock, BarterdudeMock
+from barterdude.mocks import PartialMockService
 
 
 class BarterDude(MutableMapping):
@@ -33,6 +37,49 @@ class BarterDude(MutableMapping):
             methods=methods,
             type=RouteTypes.HTTP
         )(hook)
+
+    def add_callback_endpoint(
+        self,
+        routes: Iterable[str],
+        methods: Iterable[str],
+        hook: Callable,
+        mock_dependencies: Iterable[PartialMockService] = None,
+    ):
+        def hook_to_callback(req):
+            return self._call_callback_endpoint(req, hook, mock_dependencies)
+
+        self.add_endpoint(
+            routes=routes,
+            methods=methods,
+            hook=hook_to_callback
+        )
+
+    async def _call_callback_endpoint(
+        self,
+        request: web.Request,
+        hook: Callable,
+        mock_dependencies: Iterable[PartialMockService],
+    ):
+        payload = await request.json()
+        body = payload['body']
+        headers = payload['headers']
+        should_mock_barterdude = payload.get('should_mock_barterdude', True)
+
+        rabbitmq_message_mock = RabbitMQMessageMock(body, headers)
+
+        barterdude_mock = None
+        if should_mock_barterdude:
+            barterdude_mock = BarterdudeMock(mock_dependencies)
+
+        await hook(rabbitmq_message_mock, barterdude=barterdude_mock)
+
+        response = {
+            'message_calls': rabbitmq_message_mock.get_calls(),
+        }
+        if barterdude_mock:
+            response['barterdude_calls'] = barterdude_mock.get_calls()
+
+        return web.Response(status=200, body=json.dumps(response))
 
     def consume_amqp(
         self,
