@@ -69,7 +69,9 @@ class BarterDude(MutableMapping):
         if body is None:
             return web.Response(
                 status=400,
-                body=json.dumps({'msg': 'Missing "body" attribute in payload.'})
+                body=json.dumps({
+                    'msg': 'Missing "body" attribute in payload.'
+                })
             )
 
         rabbitmq_message_mock = RabbitMQMessageMock(body, headers)
@@ -82,7 +84,7 @@ class BarterDude(MutableMapping):
 
         try:
             await hook(rabbitmq_message_mock, barterdude=barterdude_mock)
-        except Exception as e:
+        except Exception:
             response['exception'] = traceback.format_exc()
 
         response['message_calls'] = rabbitmq_message_mock.get_calls()

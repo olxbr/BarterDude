@@ -119,7 +119,7 @@ class TestBarterDude(TestCase):
         service_mock.method_two.assert_not_called()
         assert response.status == 400
 
-    async def test_should_hook_call_on_callback_endpoint_hook_raising_exception(self):
+    async def test_should_hook_call_on_callback_endpoint_with_exception(self):
         async def mock_hook(message, barterdude):
             raise Exception
 
