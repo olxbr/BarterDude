@@ -325,7 +325,8 @@ self.add_callback_endpoint(
 				},
 				"properties": {
 					"headers": {
-						"has_failed": false
+						"has_failed": false,
+                        "trace_id": "random_id"
 					}
 				}
 			}
