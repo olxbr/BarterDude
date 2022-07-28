@@ -86,7 +86,7 @@ class TestBarterDude(TestCase):
             message.accept()
 
         request = Mock()
-        request.json = CoroutineMock()
+        request.json = CoroutineMock(return_value={'body': {}})
         service_mock = Mock()
         service_mock.method_one.return_value = 123
         service_mock.method_two = CoroutineMock(return_value=234)
@@ -97,6 +97,40 @@ class TestBarterDude(TestCase):
         request.json.assert_called_once()
         service_mock.method_one.assert_called_once()
         service_mock.method_two.assert_called_once()
+        assert response.status == 200
+
+    async def test_should_hook_call_on_callback_endpoint_without_body(self):
+        async def mock_hook(message, barterdude):
+            barterdude['service'].method_one()
+            await barterdude['service'].method_two()
+            message.accept()
+
+        request = Mock()
+        request.json = CoroutineMock(return_value={})
+        service_mock = Mock()
+        service_mock.method_one.return_value = 123
+        service_mock.method_two = CoroutineMock(return_value=234)
+        dependencies = [PartialMockService(service_mock, 'service')]
+        response = await self.barterdude._call_callback_endpoint(
+            request, mock_hook, dependencies)
+
+        request.json.assert_called_once()
+        service_mock.method_one.assert_not_called()
+        service_mock.method_two.assert_not_called()
+        assert response.status == 400
+
+    async def test_should_hook_call_on_callback_endpoint_hook_raising_exception(self):
+        async def mock_hook(message, barterdude):
+            raise Exception
+
+        request = Mock()
+        request.json = CoroutineMock(return_value={'body': {}})
+        service_mock = Mock()
+        dependencies = [PartialMockService(service_mock, 'service')]
+        response = await self.barterdude._call_callback_endpoint(
+            request, mock_hook, dependencies)
+
+        request.json.assert_called_once()
         assert response.status == 200
 
     async def test_should_hook_call_on_callback_endpoint_with_dependecy(self):

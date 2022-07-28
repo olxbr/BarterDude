@@ -1,4 +1,5 @@
 import json
+import traceback
 from aiohttp import web
 from asyncio import gather
 from asyncworker import App, RouteTypes
@@ -61,9 +62,15 @@ class BarterDude(MutableMapping):
         mock_dependencies: Iterable[PartialMockService],
     ):
         payload = await request.json()
-        body = payload['body']
-        headers = payload['headers']
+        body = payload.get('body')
+        headers = payload.get('headers')
         should_mock_barterdude = payload.get('should_mock_barterdude', True)
+
+        if body is None:
+            return web.Response(
+                status=400,
+                body=json.dumps({'msg': 'Missing "body" attribute in payload.'})
+            )
 
         rabbitmq_message_mock = RabbitMQMessageMock(body, headers)
 
@@ -71,11 +78,15 @@ class BarterDude(MutableMapping):
         if should_mock_barterdude:
             barterdude_mock = BarterdudeMock(mock_dependencies)
 
-        await hook(rabbitmq_message_mock, barterdude=barterdude_mock)
+        response = {}
 
-        response = {
-            'message_calls': rabbitmq_message_mock.get_calls(),
-        }
+        try:
+            await hook(rabbitmq_message_mock, barterdude=barterdude_mock)
+        except Exception as e:
+            response['exception'] = traceback.format_exc()
+
+        response['message_calls'] = rabbitmq_message_mock.get_calls()
+
         if barterdude_mock:
             response['barterdude_calls'] = barterdude_mock.get_calls()
 
