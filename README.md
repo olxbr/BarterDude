@@ -74,7 +74,7 @@ async def your_consumer(msg: Message): # you receive only one message and we par
         data=msg.body
     )
     if msg.body == "fail":
-    
+
         my_metric.inc() # you can use prometheus metrics
         healthcheck.force_fail() # you can use your hooks inside consumer too
         msg.reject(requeue=False) # You can force to reject a message, exactly equal https://b2wdigital.github.io/async-worker/src/asyncworker/asyncworker.rabbitmq.html#asyncworker.rabbitmq.message.RabbitMQMessage
@@ -266,7 +266,130 @@ This configuration just controls BarterDude's default Logging Hook and doesn't h
 from baterdude.conf import BARTERDUDE_LOG_REDACTED
 ```
 
-### Testing
+## HTTP Endpoints
+
+### Simple endpoints
+
+If you want to expose and HTTP endpoint, you can easily do that to your Barterdude worker by adding a route mapped to a hook.
+
+```python
+barterdude.add_endpoint(
+    routes=["/some_hook"],
+    methods=["GET"],
+    hook=some_hook,
+)
+```
+
+### Barterdude's callback endpoint
+
+You can also expose an HTTP endpoint that calls the worker's callback to emulate a message being consumed and processed from a queue. This way you can make a request passing a body and header of a message and the response of this request will have all information of what the worker would do without really publishing the message.
+
+```python
+self.add_callback_endpoint(
+    routes=["/execute"],
+    methods=["POST"],
+    hook=self._execute,
+)
+```
+#### Request and response example:
+```json
+# Request
+{
+	"body": {
+		"list_id": 105515152
+	},
+	"headers": {
+		"trace_id": "random_id"
+	}
+}
+
+# Response
+{
+	"message_calls": [
+		{
+			"method": "accept",
+			"args": [],
+			"kwargs": {}
+		}
+	],
+	"barterdude_calls": [
+		{
+			"method": "publish_amqp",
+			"args": [],
+			"kwargs": {
+				"exchange": "NEXT_EXCHANGE_TO_BE_CALLED",
+				"data": {
+					"list_id": 1055151521,
+                    "subject": "vendo samsung galaxy s21",
+					"timestamp": 1657231231000
+				},
+				"properties": {
+					"headers": {
+						"has_failed": false
+					}
+				}
+			}
+		}
+	]
+}
+```
+
+### Side-effects
+
+If your callback has side-effects such as inserting a row in a database or updating an API instead of just making read calls, you can use the following helper to mock specific methods of services that are used via dependecy injection and prevent to side-effects from happenning.
+
+When mocking, you need to specify each method you want to mock and what should be returned when it is called. Both sync and async methods can be mocked.
+
+
+```python
+from barterdude.mocks import PartialMockService
+
+barterdude.add_callback_endpoint(
+    routes=["/execute"],
+    methods=["POST"],
+    hook=execute,
+    mock_dependencies=[
+        PartialMockService(
+            service=database_service,          # service instance used by the worker
+            name="database_service",           # named used in the data sharing/dependency injection
+            methods={},                        # sync methods and async methods
+            async_methods={"update_ad": True}  # the dict key is the method's name and the value is its return value
+        ),
+    ]
+)
+```
+
+#### Forcing side-effects
+
+If you want the message to be published when calling the callback endpoint, you can pass the parameter `should_mock_barterdude: false`. This way the message will be published. Also, you you don't mock the services used by ther worker, all side-effects will happen and you'll have your worker processing your message just like it would be when consuming from a queue.
+
+#### Request and response example:
+```json
+# Request
+{
+	"body": {
+		"list_id": 105515152
+	},
+	"headers": {
+		"trace_id": "random_id"
+	},
+    "should_mock": "should_mock_barterdude"
+}
+
+# Response
+{
+	"message_calls": [
+		{
+			"method": "accept",
+			"args": [],
+			"kwargs": {}
+		}
+	]
+    # message will be published, so we won't have information about publish method's calls
+}
+```
+
+## Testing
 
 To test async consumers we recommend `asynctest` lib
 
