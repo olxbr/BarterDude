@@ -291,6 +291,14 @@ self.add_callback_endpoint(
     hook=self._execute,
 )
 ```
+
+In order to use a mock instance of the barterdude object, you also need to modify the signature of your callback method to receive a optional argument for the barterdude mock. Then you'll have to choose which one to use. Only the callback endpoint calls will pass the barterdude object to your callback.
+
+```python
+async def _execute(rabbitmq_message: RabbitMQMessage, barterdude_arg=None):
+    bd = barterdude_arg if barterdude_arg is not None else barterdude
+```
+
 #### Request and response example:
 ```json
 # Request
