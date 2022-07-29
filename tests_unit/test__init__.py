@@ -98,6 +98,8 @@ class TestBarterDude(TestCase):
         service_mock.method_one.assert_called_once()
         service_mock.method_two.assert_called_once()
         assert response.status == 200
+        assert b'message_calls' in response.body._value
+        assert b'barterdude_calls' in response.body._value
 
     async def test_should_hook_call_on_callback_endpoint_without_body(self):
         async def mock_hook(message, barterdude):
@@ -118,6 +120,7 @@ class TestBarterDude(TestCase):
         service_mock.method_one.assert_not_called()
         service_mock.method_two.assert_not_called()
         assert response.status == 400
+        assert response.body._value == b'{"msg": "Missing \\"body\\" attribute in payload."}'
 
     async def test_should_hook_call_on_callback_endpoint_with_exception(self):
         async def mock_hook(message, barterdude):
@@ -132,6 +135,7 @@ class TestBarterDude(TestCase):
 
         request.json.assert_called_once()
         assert response.status == 200
+        assert b'exception' in response.body._value
 
     async def test_should_hook_call_on_callback_endpoint_with_dependency(self):
         async def mock_hook(message, barterdude):
@@ -156,6 +160,8 @@ class TestBarterDude(TestCase):
         service_mock.method_one.assert_called_once()
         service_mock.method_two.assert_not_called()
         assert response.status == 200
+        assert b'message_calls' in response.body._value
+        assert b'barterdude_calls' in response.body._value
 
     async def test_should_call_callback_for_each_message(self):
         self.barterdude.consume_amqp(["queue"], self.monitor)(self.callback)
