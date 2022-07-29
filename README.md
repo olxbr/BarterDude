@@ -362,7 +362,7 @@ barterdude.add_callback_endpoint(
 
 #### Forcing side-effects
 
-If you want the message to be published when calling the callback endpoint, you can pass the parameter `should_mock_barterdude: false`. This way the message will be published. Also, you you don't mock the services used by ther worker, all side-effects will happen and you'll have your worker processing your message just like it would be when consuming from a queue.
+If you want the message to be published when calling the callback endpoint, you can pass the parameter `should_mock_barterdude: false`. This way the message will be published. Also, you don't have to mock the services used by your worker, all side-effects will happen and you'll have your worker processing your message just like it would be when consuming from a queue.
 
 #### Request and response example:
 ```json
