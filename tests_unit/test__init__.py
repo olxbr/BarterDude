@@ -120,7 +120,8 @@ class TestBarterDude(TestCase):
         service_mock.method_one.assert_not_called()
         service_mock.method_two.assert_not_called()
         assert response.status == 400
-        assert response.body._value == b'{"msg": "Missing \\"body\\" attribute in payload."}'
+        expected_msg = b'{"msg": "Missing \\"body\\" attribute in payload."}'
+        assert response.body._value == expected_msg
 
     async def test_should_hook_call_on_callback_endpoint_with_exception(self):
         async def mock_hook(message, barterdude):
