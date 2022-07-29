@@ -5,7 +5,7 @@ from typing import Dict, Any, Iterable
 
 class MockWithAssignment(Mock):
     def __init__(self, *args, **kwargs):
-        super(Mock, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.__data = {}
 
     def __setitem__(self, key, value):
