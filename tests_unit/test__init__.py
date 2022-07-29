@@ -133,7 +133,7 @@ class TestBarterDude(TestCase):
         request.json.assert_called_once()
         assert response.status == 200
 
-    async def test_should_hook_call_on_callback_endpoint_with_dependecy(self):
+    async def test_should_hook_call_on_callback_endpoint_with_dependency(self):
         async def mock_hook(message, barterdude):
             barterdude['service'].method_one()
             barterdude['service'].method_two()
