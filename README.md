@@ -285,17 +285,17 @@ barterdude.add_endpoint(
 You can also expose an HTTP endpoint that calls the worker's callback to emulate a message being consumed and processed from a queue. This way you can make a request passing a body and header of a message and the response of this request will have all information of what the worker would do without really publishing the message.
 
 ```python
-self.add_callback_endpoint(
+barterdude.add_callback_endpoint(
     routes=["/execute"],
     methods=["POST"],
-    hook=self._execute,
+    hook=execute,
 )
 ```
 
 In order to use a mock instance of the barterdude object, you also need to modify the signature of your callback method to receive a optional argument for the barterdude mock. Then you'll have to choose which one to use. Only the callback endpoint calls will pass the barterdude object to your callback.
 
 ```python
-async def _execute(rabbitmq_message: RabbitMQMessage, barterdude_arg=None):
+async def execute(rabbitmq_message: RabbitMQMessage, barterdude_arg=None):
     bd = barterdude_arg if barterdude_arg is not None else barterdude
 ```
 
