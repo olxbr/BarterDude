@@ -89,7 +89,7 @@ class BarterDude(MutableMapping):
 
         response['message_calls'] = rabbitmq_message_mock.get_calls()
 
-        if barterdude_mock:
+        if barterdude_mock is not None:
             response['barterdude_calls'] = barterdude_mock.get_calls()
 
         return web.Response(status=200, body=json.dumps(response))
