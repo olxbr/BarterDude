@@ -328,7 +328,7 @@ async def execute(rabbitmq_message: RabbitMQMessage, barterdude_arg=None):
 				"exchange": "NEXT_EXCHANGE_TO_BE_CALLED",
 				"data": {
 					"list_id": 1055151521,
-                    "subject": "vendo samsung galaxy s21",
+					"subject": "vendo samsung galaxy s21",
 					"timestamp": 1657231231000
 				},
 				"properties": {
