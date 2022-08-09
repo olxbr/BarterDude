@@ -1,6 +1,18 @@
 import asyncio
-from asynctest.mock import Mock, CoroutineMock
+from unittest.mock import Mock
 from typing import Dict, Any, Iterable
+
+
+class AsyncMock(Mock):
+
+    def __call__(self, *args, **kwargs):
+        sup = super(AsyncMock, self)
+        async def coro():
+            return sup.__call__(*args, **kwargs)
+        return coro()
+
+    def __await__(self):
+        return self().__await__()
 
 
 class MockWithAssignment(Mock):
@@ -82,7 +94,7 @@ class BarterdudeMock(MockWithAssignment):
         **kwargs
     ):
         super().__init__(*args, **kwargs)
-        self.publish_amqp = CoroutineMock()
+        self.publish_amqp = AsyncMock()
         if mock_dependencies:
             for dependency in mock_dependencies:
                 self[dependency._name] = dependency

@@ -99,7 +99,7 @@ class TestBarterdudeMock(TestCase):
         ]
         payload = {'data': {'a': 1}}
         mock = BarterdudeMock(dependencies)
-        mock.publish_amqp(payload)
+        await mock.publish_amqp(payload)
         mock.publish_amqp.assert_called_once()
         mock.publish_amqp.assert_called_with(payload)
         assert 'service' in mock
