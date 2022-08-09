@@ -68,13 +68,12 @@ class TestBarterDude(TestCase):
         hook = Mock()
         self.barterdude.add_callback_endpoint(
             ['/my_route'],
-            ['GET'],
             hook,
             PartialMockService(Mock(), 'service')
         )
         self.app.route.assert_called_once_with(
             routes=['/my_route'],
-            methods=['GET'],
+            methods=['POST'],
             type=RouteTypes.HTTP
         )
         self.decorator.assert_called_once()

@@ -42,7 +42,6 @@ class BarterDude(MutableMapping):
     def add_callback_endpoint(
         self,
         routes: Iterable[str],
-        methods: Iterable[str],
         hook: Callable,
         mock_dependencies: Iterable[PartialMockService] = None,
     ):
@@ -51,7 +50,7 @@ class BarterDude(MutableMapping):
 
         self.add_endpoint(
             routes=routes,
-            methods=methods,
+            methods=['POST'],
             hook=hook_to_callback
         )
 

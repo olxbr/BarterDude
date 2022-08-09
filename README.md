@@ -287,7 +287,6 @@ You can also expose an HTTP endpoint that calls the worker's callback to emulate
 ```python
 barterdude.add_callback_endpoint(
     routes=["/execute"],
-    methods=["POST"],
     hook=execute,
 )
 ```
