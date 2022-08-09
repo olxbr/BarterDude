@@ -71,7 +71,7 @@ class BarterdudeMock(MutableMapping, ObjectWithCallsTracking):
             for service, name in mock_dependencies:
                 self[name] = service
 
-    async def publish_amqp(*args, **kwargs):
+    async def publish_amqp(self, *args, **kwargs):
         pass
 
     def __getitem__(self, key):
