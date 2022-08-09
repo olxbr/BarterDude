@@ -334,7 +334,7 @@ async def execute(rabbitmq_message: RabbitMQMessage, barterdude_arg=None):
 				"properties": {
 					"headers": {
 						"has_failed": false,
-                        "trace_id": "random_id"
+						"trace_id": "random_id"
 					}
 				}
 			}
