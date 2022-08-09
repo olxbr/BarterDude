@@ -1,40 +1,34 @@
 import asyncio
-from unittest.mock import Mock
 from typing import Dict, Any, Iterable
+from collections import MutableMapping
+from aioamqp.properties import Properties
 
 
-class AsyncMock(Mock):
+class ObjectWithCallsTracking:
 
-    def __call__(self, *args, **kwargs):
-        sup = super(AsyncMock, self)
-
-        async def coro():
-            return sup.__call__(*args, **kwargs)
-        return coro()
-
-    def __await__(self):
-        return self().__await__()
-
-
-class MockWithAssignment(Mock):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.__data = {}
+        self.method_calls = []
 
-    def __setitem__(self, key, value):
-        self.__data[key] = value
+    def __getattribute__(self, name: str) -> Any:
+        attr = super().__getattribute__(name)
+        if not hasattr(attr, '__call__') or name == 'get_calls':
+            return attr
 
-    def __getitem__(self, key):
-        return self.__data[key]
+        if asyncio.iscoroutine(attr) or asyncio.iscoroutinefunction(attr):
+            async def async_track_calls(*args, **kwargs):
+                self.method_calls.append((
+                    name, args, kwargs
+                ))
+                return await attr(*args, **kwargs)
+            return async_track_calls
 
-    def __delitem__(self, key):
-        del self.__data[key]
-
-    def __len__(self):
-        return len(self.__data)
-
-    def __iter__(self):
-        return iter(self.__data)
+        def track_calls(*args, **kwargs):
+            self.method_calls.append((
+                name, args, kwargs
+            ))
+            return attr(*args, **kwargs)
+        return track_calls
 
     def get_calls(self):
         return [
@@ -43,37 +37,7 @@ class MockWithAssignment(Mock):
         ]
 
 
-class PartialMockService:
-    def __init__(
-        self,
-        service: Any,
-        name: str,
-        methods: Dict = None,
-        async_methods: Dict = None
-    ):
-        self._service = service
-        self._name = name
-        self._methods = methods or {}
-        self._async_methods = async_methods or {}
-
-    def __getattr__(self, name):
-        if hasattr(self._service, name):
-            attr = getattr(self._service, name)
-            if hasattr(attr, '__call__'):
-                def replace_method(*args, **kwargs):
-                    if name in self._methods:
-                        return self._methods[name]
-                    if name in self._async_methods:
-                        future = asyncio.Future()
-                        future.set_result(self._async_methods[name])
-                        return future
-                    return attr(*args, **kwargs)
-                return replace_method
-            else:
-                return attr
-
-
-class RabbitMQMessageMock(MockWithAssignment):
+class RabbitMQMessageMock(ObjectWithCallsTracking):
     def __init__(
         self,
         body: Dict = None,
@@ -83,19 +47,44 @@ class RabbitMQMessageMock(MockWithAssignment):
     ):
         super().__init__(*args, **kwargs)
         self.body = body
-        self.properties = MockWithAssignment()
+        self.properties = Properties()
         self.properties.headers = headers
 
+    def accept(self, *args, **kwargs):
+        pass
 
-class BarterdudeMock(MockWithAssignment):
+    def reject(self, *args, **kwargs):
+        pass
+
+
+class BarterdudeMock(MutableMapping, ObjectWithCallsTracking):
     def __init__(
         self,
-        mock_dependencies: Iterable[PartialMockService] = None,
+        mock_dependencies: Iterable[Any] = None,
         *args,
         **kwargs
     ):
         super().__init__(*args, **kwargs)
-        self.publish_amqp = AsyncMock()
+        self.__app = {}
+
         if mock_dependencies:
-            for dependency in mock_dependencies:
-                self[dependency._name] = dependency
+            for service, name in mock_dependencies:
+                self[name] = service
+
+    async def publish_amqp(*args, **kwargs):
+        pass
+
+    def __getitem__(self, key):
+        return self.__app[key]
+
+    def __setitem__(self, key, value):
+        self.__app[key] = value
+
+    def __delitem__(self, key):
+        del self.__app[key]
+
+    def __len__(self):
+        return len(self.__app)
+
+    def __iter__(self):
+        return iter(self.__app)

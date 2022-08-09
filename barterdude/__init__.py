@@ -7,11 +7,10 @@ from asyncworker.options import Options
 from asyncworker.connections import AMQPConnection
 from asyncworker.rabbitmq.message import RabbitMQMessage
 from collections import MutableMapping
-from typing import Iterable, Optional, Callable
+from typing import Iterable, Optional, Callable, Any
 from barterdude.monitor import Monitor
 from barterdude.message import MessageValidation, ValidationException
 from barterdude.mocks import RabbitMQMessageMock, BarterdudeMock
-from barterdude.mocks import PartialMockService
 
 
 class BarterDude(MutableMapping):
@@ -43,7 +42,7 @@ class BarterDude(MutableMapping):
         self,
         routes: Iterable[str],
         hook: Callable,
-        mock_dependencies: Iterable[PartialMockService] = None,
+        mock_dependencies: Iterable[Any] = None,
     ):
         def hook_to_callback(req):
             return self._call_callback_endpoint(req, hook, mock_dependencies)
@@ -58,7 +57,7 @@ class BarterDude(MutableMapping):
         self,
         request: web.Request,
         hook: Callable,
-        mock_dependencies: Iterable[PartialMockService],
+        mock_dependencies: Iterable[Any],
     ):
         payload = await request.json()
         body = payload.get('body')

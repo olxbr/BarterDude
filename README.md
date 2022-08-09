@@ -344,24 +344,17 @@ async def execute(rabbitmq_message: RabbitMQMessage, barterdude_arg=None):
 
 ### Side-effects
 
-If your callback has side-effects such as inserting a row in a database or updating an API instead of just making read calls, you can use the following helper to mock specific methods of services that are used via dependecy injection and prevent to side-effects from happenning.
-
-When mocking, you need to specify each method you want to mock and what should be returned when it is called. Both sync and async methods can be mocked.
-
+If your callback has services with side-effects such as inserting a row in a database or updating an API, you can pass fake instances of these services that are going to be injected to prevent side-effects from happenning.
 
 ```python
-from barterdude.mocks import PartialMockService
-
 barterdude.add_callback_endpoint(
     routes=["/execute"],
     methods=["POST"],
     hook=execute,
     mock_dependencies=[
-        PartialMockService(
-            service=database_service,          # service instance used by the worker
-            name="database_service",           # named used in the data sharing/dependency injection
-            methods={},                        # sync methods and async methods
-            async_methods={"update_ad": True}  # the dict key is the method's name and the value is its return value
+        (
+            fake_database_service,  # fake service instance to be used by the worker
+            "database_service",     # name used in the data sharing/dependency injection
         ),
     ]
 )

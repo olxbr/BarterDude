@@ -2,7 +2,6 @@ from asynctest import Mock, TestCase, CoroutineMock, patch, call
 from asyncworker import Options, RouteTypes
 from barterdude import BarterDude
 from barterdude.message import Message
-from barterdude.mocks import PartialMockService
 from tests_unit.helpers import load_fixture
 
 
@@ -69,7 +68,7 @@ class TestBarterDude(TestCase):
         self.barterdude.add_callback_endpoint(
             ['/my_route'],
             hook,
-            PartialMockService(Mock(), 'service')
+            [(Mock(), 'service')]
         )
         self.app.route.assert_called_once_with(
             routes=['/my_route'],
@@ -83,13 +82,14 @@ class TestBarterDude(TestCase):
             barterdude['service'].method_one()
             await barterdude['service'].method_two()
             message.accept()
+            await barterdude.publish_amqp(data={'a': 1})
 
         request = Mock()
         request.json = CoroutineMock(return_value={'body': {}})
         service_mock = Mock()
         service_mock.method_one.return_value = 123
         service_mock.method_two = CoroutineMock(return_value=234)
-        dependencies = [PartialMockService(service_mock, 'service')]
+        dependencies = [(service_mock, 'service')]
         response = await self.barterdude._call_callback_endpoint(
             request, mock_hook, dependencies)
 
@@ -97,21 +97,25 @@ class TestBarterDude(TestCase):
         service_mock.method_one.assert_called_once()
         service_mock.method_two.assert_called_once()
         assert response.status == 200
-        assert b'message_calls' in response.body._value
-        assert b'barterdude_calls' in response.body._value
+        assert response.body._value == (
+            b'{"message_calls": [{"method": "accept", "args": [],'
+            b' "kwargs": {}}], "barterdude_calls": [{"method": '
+            b'"publish_amqp", "args": [], "kwargs": {"data": {"a": 1}}}]}'
+        )
 
     async def test_should_hook_call_on_callback_endpoint_without_body(self):
         async def mock_hook(message, barterdude):
             barterdude['service'].method_one()
             await barterdude['service'].method_two()
             message.accept()
+            await barterdude.publish_amqp(data={'a': 1})
 
         request = Mock()
         request.json = CoroutineMock(return_value={})
         service_mock = Mock()
         service_mock.method_one.return_value = 123
         service_mock.method_two = CoroutineMock(return_value=234)
-        dependencies = [PartialMockService(service_mock, 'service')]
+        dependencies = [(service_mock, 'service')]
         response = await self.barterdude._call_callback_endpoint(
             request, mock_hook, dependencies)
 
@@ -129,39 +133,41 @@ class TestBarterDude(TestCase):
         request = Mock()
         request.json = CoroutineMock(return_value={'body': {}})
         service_mock = Mock()
-        dependencies = [PartialMockService(service_mock, 'service')]
+        dependencies = [(service_mock, 'service')]
         response = await self.barterdude._call_callback_endpoint(
             request, mock_hook, dependencies)
 
         request.json.assert_called_once()
         assert response.status == 200
         assert b'exception' in response.body._value
+        assert b'message_calls' in response.body._value
+        assert b'barterdude_calls' in response.body._value
 
     async def test_should_hook_call_on_callback_endpoint_with_dependency(self):
         async def mock_hook(message, barterdude):
             barterdude['service'].method_one()
             barterdude['service'].method_two()
             message.accept()
+            await barterdude.publish_amqp(data={'a': 1})
 
         request = Mock()
         request.json = CoroutineMock()
         service_mock = Mock()
         service_mock.method_one.return_value = 123
         service_mock.method_two = CoroutineMock(return_value=234)
-        dependencies = [
-            PartialMockService(
-                service_mock, 'service', methods={'method_two': 345}
-            )
-        ]
+        dependencies = [(service_mock, 'service')]
         response = await self.barterdude._call_callback_endpoint(
             request, mock_hook, dependencies)
 
         request.json.assert_called_once()
         service_mock.method_one.assert_called_once()
-        service_mock.method_two.assert_not_called()
+        service_mock.method_two.assert_called_once()
         assert response.status == 200
-        assert b'message_calls' in response.body._value
-        assert b'barterdude_calls' in response.body._value
+        assert response.body._value == (
+            b'{"message_calls": [{"method": "accept", "args": [],'
+            b' "kwargs": {}}], "barterdude_calls": [{"method": '
+            b'"publish_amqp", "args": [], "kwargs": {"data": {"a": 1}}}]}'
+        )
 
     async def test_should_call_callback_for_each_message(self):
         self.barterdude.consume_amqp(["queue"], self.monitor)(self.callback)
