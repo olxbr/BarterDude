@@ -1,5 +1,4 @@
 from asynctest import TestCase
-from barterdude.mocks import ObjectWithCallsTracking
 from barterdude.mocks import BarterdudeMock, RabbitMQMessageMock
 
 
