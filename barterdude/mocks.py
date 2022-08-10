@@ -1,5 +1,5 @@
 import asyncio
-from typing import Dict, Any, Iterable
+from typing import Dict, Any, Iterable, Tuple
 from collections import MutableMapping
 from aioamqp.properties import Properties
 
@@ -60,7 +60,7 @@ class RabbitMQMessageMock(ObjectWithCallsTracking):
 class BarterdudeMock(MutableMapping, ObjectWithCallsTracking):
     def __init__(
         self,
-        mock_dependencies: Iterable[Any] = None,
+        mock_dependencies: Iterable[Tuple[Any, str]] = None,
         *args,
         **kwargs
     ):
