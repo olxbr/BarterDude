@@ -1,12 +1,16 @@
+import json
+import traceback
+from aiohttp import web
 from asyncio import gather
 from asyncworker import App, RouteTypes
 from asyncworker.options import Options
 from asyncworker.connections import AMQPConnection
 from asyncworker.rabbitmq.message import RabbitMQMessage
 from collections import MutableMapping
-from typing import Iterable, Optional
+from typing import Iterable, Optional, Callable, Any, Tuple
 from barterdude.monitor import Monitor
 from barterdude.message import MessageValidation, ValidationException
+from barterdude.mocks import RabbitMQMessageMock, BarterdudeMock
 
 
 class BarterDude(MutableMapping):
@@ -33,6 +37,60 @@ class BarterDude(MutableMapping):
             methods=methods,
             type=RouteTypes.HTTP
         )(hook)
+
+    def add_callback_endpoint(
+        self,
+        routes: Iterable[str],
+        hook: Callable,
+        mock_dependencies: Iterable[Tuple[Any, str]] = None,
+    ):
+        def hook_to_callback(req):
+            return self._call_callback_endpoint(req, hook, mock_dependencies)
+
+        self.add_endpoint(
+            routes=routes,
+            methods=['POST'],
+            hook=hook_to_callback
+        )
+
+    async def _call_callback_endpoint(
+        self,
+        request: web.Request,
+        hook: Callable,
+        mock_dependencies: Iterable[Tuple[Any, str]],
+    ):
+        payload = await request.json()
+        body = payload.get('body')
+        headers = payload.get('headers')
+        should_mock_barterdude = payload.get('should_mock_barterdude', True)
+
+        if body is None:
+            return web.Response(
+                status=400,
+                body=json.dumps({
+                    'msg': 'Missing "body" attribute in payload.'
+                })
+            )
+
+        rabbitmq_message_mock = RabbitMQMessageMock(body, headers)
+
+        barterdude_mock = None
+        if should_mock_barterdude:
+            barterdude_mock = BarterdudeMock(mock_dependencies)
+
+        response = {}
+
+        try:
+            await hook(rabbitmq_message_mock, barterdude=barterdude_mock)
+        except Exception:
+            response['exception'] = traceback.format_exc()
+
+        response['message_calls'] = rabbitmq_message_mock.get_calls()
+
+        if barterdude_mock is not None:
+            response['barterdude_calls'] = barterdude_mock.get_calls()
+
+        return web.Response(status=200, body=json.dumps(response))
 
     def consume_amqp(
         self,

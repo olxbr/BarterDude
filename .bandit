@@ -1,2 +1,2 @@
 [bandit]
-exclude: ./.eggs/
+exclude: ./.eggs/,./tests_unit/,./tests_integration/
