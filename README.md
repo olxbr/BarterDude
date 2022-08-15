@@ -374,7 +374,7 @@ If you want the message to be published when calling the callback endpoint, you 
 	"headers": {
 		"trace_id": "random_id"
 	},
-    "should_mock": "should_mock_barterdude"
+        "should_mock_barterdude": false
 }
 
 # Response
