@@ -349,7 +349,6 @@ If your callback has services with side-effects such as inserting a row in a dat
 ```python
 barterdude.add_callback_endpoint(
     routes=["/execute"],
-    methods=["POST"],
     hook=execute,
     mock_dependencies=[
         (
