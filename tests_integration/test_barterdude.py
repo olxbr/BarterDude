@@ -1,7 +1,7 @@
 import asyncio
 import os
 from asyncio import Event
-from random import choices
+from random import choices, random
 from string import ascii_uppercase
 
 import aiohttp
@@ -21,9 +21,10 @@ class TestBarterDude(TestCase):
     use_default_loop = True
 
     async def setUp(self):
-        self.input_queue = "test"
+        suffix = str(int(random()*10000))
+        self.input_queue = f"test_{suffix}"
         self.output_exchange = "test_exchange"
-        self.output_queue = "test_output"
+        self.output_queue = f"test_output_{suffix}"
         self.rabbitmq_host = os.environ.get("RABBITMQ_HOST", "127.0.0.1")
         self.barterdude_host = os.environ.get("BARTERDUDE_HOST", "127.0.0.1")
 
@@ -189,7 +190,7 @@ class TestBarterDude(TestCase):
                 data=self.messages[0]
             )
             await sync_event.wait()
-            await asyncio.sleep(1)
+            await asyncio.sleep(0.05)
 
         key = self.messages[0]["key"]
         error_str = repr(error)
@@ -227,7 +228,7 @@ class TestBarterDude(TestCase):
                 data=self.messages[0]
             )
             await sync_event.wait()
-            await asyncio.sleep(1)
+            await asyncio.sleep(0.05)
 
         key = self.messages[0]["key"]
         error_str = repr(error)

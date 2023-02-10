@@ -13,7 +13,7 @@ test:
 	@pytest --ignore="tests_integration" --cov=barterdude
 
 integration:
-	@pytest --ignore="tests_unit"
+	@pytest --ignore="tests_unit" -vv
 
 all-tests: | test integration lint check-sec
 

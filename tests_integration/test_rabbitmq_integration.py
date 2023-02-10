@@ -1,7 +1,7 @@
 import asyncio
 import os
 from asyncio import Event
-from random import choices
+from random import choices, random
 from string import ascii_uppercase
 
 from asynctest import TestCase
@@ -19,9 +19,10 @@ class RabbitMQConsumerTest(TestCase):
     use_default_loop = True
 
     async def setUp(self):
-        self.input_queue = "test"
+        suffix = str(int(random()*10000))
+        self.input_queue = f"test_{suffix}"
         self.output_exchange = "test_exchange"
-        self.output_queue = "test_output"
+        self.output_queue = f"test_output_{suffix}"
         self.rabbitmq_host = os.environ.get("RABBITMQ_HOST", "127.0.0.1")
         self.barterdude_host = os.environ.get("BARTERDUDE_HOST", "127.0.0.1")
 
@@ -111,7 +112,6 @@ class RabbitMQConsumerTest(TestCase):
 
     async def test_process_messages_successfully_even_with_crashed_hook(self):
         received_messages = set()
-        sync_event = Event()
 
         monitor = Monitor(ErrorHook())
 
@@ -120,14 +120,16 @@ class RabbitMQConsumerTest(TestCase):
         async def handler(message):
             nonlocal received_messages
             received_messages.add(message.body["key"])
-            sync_event.set()
 
         await self.app.startup()
         await self.send_all_messages()
 
-        await sync_event.wait()
-        for message in self.messages:
-            self.assertTrue(message["key"] in received_messages)
+        expected = set([m["key"] for m in self.messages])
+
+        while len(expected - received_messages) > 0:
+            await asyncio.sleep(0.05)
+
+        self.assertEquals(expected, received_messages)
 
     async def test_process_one_message_and_publish(self):
         sync_event = Event()
