@@ -8,7 +8,15 @@ extra = {
 }
 
 with open("requirements/requirements_base.txt") as reqs:
-    requirements = reqs.read().split("\n")
+    raw_requirements = reqs.read().split("\n")
+
+requirements = []
+for r in raw_requirements:
+    if r.startswith("git+"):
+        name = r.split(".git@")[0].split("/")[-1]
+        requirements.append(f"{name} @ {r}")
+    else:
+        requirements.append(r)
 
 for lib in libs:
     with open(f"requirements/requirements_{lib}.txt") as reqs:
