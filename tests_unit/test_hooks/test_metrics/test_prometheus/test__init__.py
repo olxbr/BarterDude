@@ -1,6 +1,6 @@
 import freezegun
 from unittest import IsolatedAsyncioTestCase
-from unittest.mock import Mock, AsyncMock, patch, call
+from unittest.mock import Mock, patch
 
 from barterdude.hooks.metrics.prometheus import Prometheus
 

@@ -1,5 +1,5 @@
 from unittest import IsolatedAsyncioTestCase
-from unittest.mock import Mock, AsyncMock, patch, call, MagicMock
+from unittest.mock import MagicMock
 from freezegun import freeze_time
 from barterdude.hooks.healthcheck import Healthcheck, HealthcheckMonitored
 

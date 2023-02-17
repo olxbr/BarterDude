@@ -2,7 +2,6 @@ import logging
 from pythonjsonlogger import jsonlogger
 
 from unittest import IsolatedAsyncioTestCase
-from unittest.mock import Mock, AsyncMock, patch, call
 
 from barterdude.conf import (
     getLogger, BARTERDUDE_DEFAULT_APP_NAME, BARTERDUDE_DEFAULT_LOG_LEVEL

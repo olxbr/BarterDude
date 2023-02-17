@@ -1,5 +1,5 @@
 from unittest import IsolatedAsyncioTestCase
-from unittest.mock import Mock, AsyncMock, patch, call, MagicMock
+from unittest.mock import Mock, AsyncMock, patch, MagicMock
 from barterdude.monitor import Monitor
 
 

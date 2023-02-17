@@ -1,5 +1,5 @@
 from unittest import IsolatedAsyncioTestCase
-from unittest.mock import Mock, AsyncMock, patch, call
+from unittest.mock import Mock
 
 from prometheus_client.metrics import MetricWrapperBase, REGISTRY
 
