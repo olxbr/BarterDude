@@ -1,4 +1,5 @@
-from asynctest import TestCase, Mock
+from unittest import TestCase
+from unittest.mock import Mock
 from barterdude.hooks import HttpHook
 
 

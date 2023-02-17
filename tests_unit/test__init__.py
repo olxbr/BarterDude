@@ -1,19 +1,21 @@
-from asynctest import Mock, TestCase, CoroutineMock, patch, call
+from unittest import IsolatedAsyncioTestCase
+from unittest.mock import Mock, AsyncMock, patch, call
+
 from asyncworker import Options, RouteTypes
 from barterdude import BarterDude
 from barterdude.message import Message
 from tests_unit.helpers import load_fixture
 
 
-class TestBarterDude(TestCase):
+class TestBarterDude(IsolatedAsyncioTestCase):
     @patch("barterdude.App")
     @patch("barterdude.AMQPConnection")
     def setUp(self, AMQPConnection, App):
         self.monitor = Mock()
-        self.monitor.dispatch_before_consume = CoroutineMock()
-        self.monitor.dispatch_on_success = CoroutineMock()
-        self.monitor.dispatch_on_fail = CoroutineMock()
-        self.callback = CoroutineMock()
+        self.monitor.dispatch_before_consume = AsyncMock()
+        self.monitor.dispatch_on_success = AsyncMock()
+        self.monitor.dispatch_on_fail = AsyncMock()
+        self.callback = AsyncMock()
         self.messages = [Mock(value=i) for i in range(10)]
         self.calls = [call(message) for message in self.messages]
 
@@ -21,8 +23,8 @@ class TestBarterDude(TestCase):
         self.connection = self.AMQPConnection.return_value
         self.App = App
         self.app = self.App.return_value
-        self.app.startup = CoroutineMock()
-        self.app.shutdown = CoroutineMock()
+        self.app.startup = AsyncMock()
+        self.app.shutdown = AsyncMock()
         self.decorator = self.app.route.return_value
         self.schema = load_fixture("schema.json")
         self.barterdude = BarterDude()
@@ -41,7 +43,7 @@ class TestBarterDude(TestCase):
         monitor = Mock()
         self.barterdude.consume_amqp(
             ["queue"], monitor=monitor
-        )(CoroutineMock())
+        )(AsyncMock())
         self.app.route.assert_called_once_with(
             ["queue"],
             type=RouteTypes.AMQP_RABBITMQ,
@@ -85,10 +87,10 @@ class TestBarterDude(TestCase):
             await barterdude.publish_amqp(data={'a': 1})
 
         request = Mock()
-        request.json = CoroutineMock(return_value={'body': {}})
+        request.json = AsyncMock(return_value={'body': {}})
         service_mock = Mock()
         service_mock.method_one.return_value = 123
-        service_mock.method_two = CoroutineMock(return_value=234)
+        service_mock.method_two = AsyncMock(return_value=234)
         dependencies = [(service_mock, 'service')]
         response = await self.barterdude._call_callback_endpoint(
             request, mock_hook, dependencies)
@@ -111,10 +113,10 @@ class TestBarterDude(TestCase):
             await barterdude.publish_amqp(data={'a': 1})
 
         request = Mock()
-        request.json = CoroutineMock(return_value={})
+        request.json = AsyncMock(return_value={})
         service_mock = Mock()
         service_mock.method_one.return_value = 123
-        service_mock.method_two = CoroutineMock(return_value=234)
+        service_mock.method_two = AsyncMock(return_value=234)
         dependencies = [(service_mock, 'service')]
         response = await self.barterdude._call_callback_endpoint(
             request, mock_hook, dependencies)
@@ -131,7 +133,7 @@ class TestBarterDude(TestCase):
             raise Exception
 
         request = Mock()
-        request.json = CoroutineMock(return_value={'body': {}})
+        request.json = AsyncMock(return_value={'body': {}})
         service_mock = Mock()
         dependencies = [(service_mock, 'service')]
         response = await self.barterdude._call_callback_endpoint(
@@ -151,10 +153,10 @@ class TestBarterDude(TestCase):
             await barterdude.publish_amqp(data={'a': 1})
 
         request = Mock()
-        request.json = CoroutineMock()
+        request.json = AsyncMock()
         service_mock = Mock()
         service_mock.method_one.return_value = 123
-        service_mock.method_two = CoroutineMock(return_value=234)
+        service_mock.method_two = AsyncMock(return_value=234)
         dependencies = [(service_mock, 'service')]
         response = await self.barterdude._call_callback_endpoint(
             request, mock_hook, dependencies)
@@ -241,7 +243,7 @@ class TestBarterDude(TestCase):
 
     async def test_should_call_put_when_publish(self):
         data = Mock()
-        self.connection.put = CoroutineMock()
+        self.connection.put = AsyncMock()
         await self.barterdude.publish_amqp(
             'exchange',
             data,
@@ -267,7 +269,7 @@ class TestBarterDude(TestCase):
         self.app.run.assert_called_once_with()
 
 
-class TestAppSharedProperties(TestCase):
+class TestAppSharedProperties(IsolatedAsyncioTestCase):
     def setUp(self):
         self.barterdude = BarterDude()
 

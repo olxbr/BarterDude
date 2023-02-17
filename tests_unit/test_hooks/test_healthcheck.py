@@ -1,4 +1,5 @@
-from asynctest import TestCase, MagicMock
+from unittest import IsolatedAsyncioTestCase
+from unittest.mock import Mock, AsyncMock, patch, call, MagicMock
 from freezegun import freeze_time
 from barterdude.hooks.healthcheck import Healthcheck, HealthcheckMonitored
 
@@ -12,7 +13,7 @@ class HealthcheckMonitoredMock(HealthcheckMonitored):
 
 
 @freeze_time()
-class TestHealthcheck(TestCase):
+class TestHealthcheck(IsolatedAsyncioTestCase):
     maxDiff = None
 
     def setUp(self):

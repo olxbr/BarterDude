@@ -1,6 +1,6 @@
 import asyncio
 from typing import Dict, Any, Iterable, Tuple
-from collections import MutableMapping
+from collections.abc import MutableMapping
 from aioamqp.properties import Properties
 
 

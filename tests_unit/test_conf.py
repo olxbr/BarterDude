@@ -1,13 +1,15 @@
 import logging
 from pythonjsonlogger import jsonlogger
 
-from asynctest import TestCase
+from unittest import IsolatedAsyncioTestCase
+from unittest.mock import Mock, AsyncMock, patch, call
+
 from barterdude.conf import (
     getLogger, BARTERDUDE_DEFAULT_APP_NAME, BARTERDUDE_DEFAULT_LOG_LEVEL
 )
 
 
-class TestConf(TestCase):
+class TestConf(IsolatedAsyncioTestCase):
 
     def setUp(self):
         self.log_name = BARTERDUDE_DEFAULT_APP_NAME

@@ -4,7 +4,7 @@ from asyncio import Event
 from random import choices, random
 from string import ascii_uppercase
 
-from asynctest import TestCase
+from unittest import IsolatedAsyncioTestCase
 from asyncworker.connections import AMQPConnection
 from barterdude import BarterDude
 from barterdude.hooks.logging import Logging
@@ -15,10 +15,9 @@ from tests_unit.helpers import load_fixture
 from tests_integration.helpers import ErrorHook
 
 
-class RabbitMQConsumerTest(TestCase):
-    use_default_loop = True
+class RabbitMQConsumerTest(IsolatedAsyncioTestCase):
 
-    async def setUp(self):
+    async def asyncSetUp(self):
         suffix = str(int(random()*10000))
         self.input_queue = f"test_{suffix}"
         self.output_exchange = "test_exchange"
@@ -57,7 +56,7 @@ class RabbitMQConsumerTest(TestCase):
 
         self.app = BarterDude(hostname=self.rabbitmq_host)
 
-    async def tearDown(self):
+    async def asyncTearDown(self):
         await self.app.shutdown()
         await self.queue_manager.connection.channel.queue_delete(
             self.input_queue

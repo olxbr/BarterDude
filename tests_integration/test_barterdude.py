@@ -5,7 +5,7 @@ from random import choices, random
 from string import ascii_uppercase
 
 import aiohttp
-from asynctest import TestCase
+from unittest import IsolatedAsyncioTestCase
 from asyncworker.connections import AMQPConnection
 from barterdude import BarterDude
 from barterdude.hooks import logging as hook_logging
@@ -17,10 +17,8 @@ from tests_unit.helpers import load_fixture
 from tests_integration.helpers import ErrorHook
 
 
-class TestBarterDude(TestCase):
-    use_default_loop = True
-
-    async def setUp(self):
+class TestBarterDude(IsolatedAsyncioTestCase):
+    async def asyncSetUp(self):
         suffix = str(int(random()*10000))
         self.input_queue = f"test_{suffix}"
         self.output_exchange = "test_exchange"
@@ -59,7 +57,7 @@ class TestBarterDude(TestCase):
 
         self.app = BarterDude(hostname=self.rabbitmq_host)
 
-    async def tearDown(self):
+    async def asyncTearDown(self):
         await self.app.shutdown()
         await self.queue_manager.connection.channel.queue_delete(
             self.input_queue

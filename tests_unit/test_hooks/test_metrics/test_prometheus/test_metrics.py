@@ -1,10 +1,12 @@
-from asynctest import TestCase, Mock
+from unittest import IsolatedAsyncioTestCase
+from unittest.mock import Mock, AsyncMock, patch, call
+
 from prometheus_client.metrics import MetricWrapperBase, REGISTRY
 
 from barterdude.hooks.metrics.prometheus.metrics import Metrics
 
 
-class TestMetrics(TestCase):
+class TestMetrics(IsolatedAsyncioTestCase):
     def test_should_set_and_get_items(self):
         metrics = Metrics(REGISTRY)
         metric_mock = Mock(spec=MetricWrapperBase)
