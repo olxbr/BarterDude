@@ -18,10 +18,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Setup python 3.7
+      - name: Setup python 3.11
         uses: actions/setup-python@v2
         with:
-          python-version: 3.7
+          python-version: 3.11
 
       - name: Install project dependencies
         run: make setup
@@ -42,10 +42,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Setup python 3.7
+      - name: Setup python 3.11
         uses: actions/setup-python@v2
         with:
-          python-version: 3.7
+          python-version: 3.11
 
       - name: Install project dependencies
         run: make install && python3 -m pip install build
@@ -70,10 +70,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Setup python 3.7
+      - name: Setup python 3.11
         uses: actions/setup-python@v2
         with:
-          python-version: 3.7
+          python-version: 3.11
 
       - name: Install project dependencies
         run: make install && python3 -m pip install build
