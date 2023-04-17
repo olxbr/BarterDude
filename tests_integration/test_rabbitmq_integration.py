@@ -1,7 +1,7 @@
 import asyncio
 import os
 from asyncio import Event
-from random import choices, random
+from random import choices
 from string import ascii_uppercase
 
 from unittest import IsolatedAsyncioTestCase
@@ -18,10 +18,9 @@ from tests_integration.helpers import ErrorHook
 class RabbitMQConsumerTest(IsolatedAsyncioTestCase):
 
     async def asyncSetUp(self):
-        suffix = str(int(random()*10000))
-        self.input_queue = f"test_{suffix}"
+        self.input_queue = "test_input"
         self.output_exchange = "test_exchange"
-        self.output_queue = f"test_output_{suffix}"
+        self.output_queue = "test_output"
         self.rabbitmq_host = os.environ.get("RABBITMQ_HOST", "127.0.0.1")
         self.barterdude_host = os.environ.get("BARTERDUDE_HOST", "127.0.0.1")
 
@@ -34,6 +33,9 @@ class RabbitMQConsumerTest(IsolatedAsyncioTestCase):
         )
         self.queue_manager = self.connection["/"]
         await self.queue_manager.connection._connect()
+
+        await self.clear()
+
         await self.queue_manager.connection.channel.queue_declare(
             self.input_queue
         )
@@ -58,6 +60,10 @@ class RabbitMQConsumerTest(IsolatedAsyncioTestCase):
 
     async def asyncTearDown(self):
         await self.app.shutdown()
+        await self.clear()
+        await self.queue_manager.connection.close()
+
+    async def clear(self):
         await self.queue_manager.connection.channel.queue_delete(
             self.input_queue
         )
@@ -67,7 +73,6 @@ class RabbitMQConsumerTest(IsolatedAsyncioTestCase):
         await self.queue_manager.connection.channel.exchange_delete(
             self.output_exchange
         )
-        await self.queue_manager.connection.close()
 
     async def send_all_messages(self):
         futures = []
