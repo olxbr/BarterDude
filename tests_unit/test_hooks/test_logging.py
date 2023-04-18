@@ -1,10 +1,11 @@
 import logging
-from asynctest import TestCase, Mock, patch
+from unittest import IsolatedAsyncioTestCase
+from unittest.mock import Mock, patch
 from barterdude.hooks import logging as hook_log
 from barterdude.conf import BARTERDUDE_DEFAULT_APP_NAME
 
 
-class TestLogging(TestCase):
+class TestLogging(IsolatedAsyncioTestCase):
     maxDiff = None
 
     def setUp(self):
@@ -45,7 +46,7 @@ class TestLogging(TestCase):
         })
 
 
-class TestLoggingNotRedacted(TestCase):
+class TestLoggingNotRedacted(IsolatedAsyncioTestCase):
     maxDiff = None
 
     def setUp(self):
@@ -94,7 +95,7 @@ class TestLoggingNotRedacted(TestCase):
         })
 
 
-class TestLoggingRedacted(TestCase):
+class TestLoggingRedacted(IsolatedAsyncioTestCase):
     maxDiff = None
 
     def setUp(self):

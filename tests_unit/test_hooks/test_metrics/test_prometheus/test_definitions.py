@@ -1,4 +1,5 @@
-from asynctest import TestCase, Mock, MagicMock
+from unittest import TestCase
+from unittest.mock import Mock, MagicMock
 
 from barterdude.hooks.metrics.prometheus.definitions import Definitions
 from prometheus_client.metrics import Counter, Histogram, REGISTRY

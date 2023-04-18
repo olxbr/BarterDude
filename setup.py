@@ -8,7 +8,15 @@ extra = {
 }
 
 with open("requirements/requirements_base.txt") as reqs:
-    requirements = reqs.read().split("\n")
+    raw_requirements = reqs.read().split("\n")
+
+requirements = []
+for r in raw_requirements:
+    if r.startswith("git+"):
+        name = r.split(".git@")[0].split("/")[-1]
+        requirements.append(f"{name} @ {r}")
+    else:
+        requirements.append(r)
 
 for lib in libs:
     with open(f"requirements/requirements_{lib}.txt") as reqs:
@@ -33,7 +41,9 @@ setup(
     install_requires=requirements,
     extras_require=extra,
     classifiers=[
-        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
         "License :: OSI Approved :: Apache Software License",
         "Topic :: Software Development :: Libraries :: Python Modules",
         "Topic :: Software Development :: Libraries :: Application Frameworks"

@@ -5,7 +5,7 @@ from random import choices
 from string import ascii_uppercase
 
 import aiohttp
-from asynctest import TestCase
+from unittest import IsolatedAsyncioTestCase
 from asyncworker.connections import AMQPConnection
 from barterdude import BarterDude
 from barterdude.hooks import logging as hook_logging
@@ -17,11 +17,9 @@ from tests_unit.helpers import load_fixture
 from tests_integration.helpers import ErrorHook
 
 
-class TestBarterDude(TestCase):
-    use_default_loop = True
-
-    async def setUp(self):
-        self.input_queue = "test"
+class TestBarterDude(IsolatedAsyncioTestCase):
+    async def asyncSetUp(self):
+        self.input_queue = "test_input"
         self.output_exchange = "test_exchange"
         self.output_queue = "test_output"
         self.rabbitmq_host = os.environ.get("RABBITMQ_HOST", "127.0.0.1")
@@ -36,6 +34,9 @@ class TestBarterDude(TestCase):
         )
         self.queue_manager = self.connection["/"]
         await self.queue_manager.connection._connect()
+
+        await self.clear()
+
         await self.queue_manager.connection.channel.queue_declare(
             self.input_queue
         )
@@ -58,8 +59,12 @@ class TestBarterDude(TestCase):
 
         self.app = BarterDude(hostname=self.rabbitmq_host)
 
-    async def tearDown(self):
+    async def asyncTearDown(self):
         await self.app.shutdown()
+        await self.clear()
+        await self.queue_manager.connection.close()
+
+    async def clear(self):
         await self.queue_manager.connection.channel.queue_delete(
             self.input_queue
         )
@@ -69,7 +74,6 @@ class TestBarterDude(TestCase):
         await self.queue_manager.connection.channel.exchange_delete(
             self.output_exchange
         )
-        await self.queue_manager.connection.close()
 
     async def test_obtains_healthcheck(self):
         monitor = Monitor(Healthcheck(self.app))
@@ -189,7 +193,7 @@ class TestBarterDude(TestCase):
                 data=self.messages[0]
             )
             await sync_event.wait()
-            await asyncio.sleep(1)
+            await asyncio.sleep(0.05)
 
         key = self.messages[0]["key"]
         error_str = repr(error)
@@ -227,7 +231,7 @@ class TestBarterDude(TestCase):
                 data=self.messages[0]
             )
             await sync_event.wait()
-            await asyncio.sleep(1)
+            await asyncio.sleep(0.05)
 
         key = self.messages[0]["key"]
         error_str = repr(error)

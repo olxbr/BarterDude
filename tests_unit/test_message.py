@@ -1,6 +1,7 @@
 import json
 import pytest
-from asynctest import TestCase, Mock
+from unittest import TestCase
+from unittest.mock import Mock
 from asyncworker.rabbitmq.message import RabbitMQMessage
 from asyncworker.easyqueue.message import AMQPMessage
 from barterdude.message import Message, MessageValidation, ValidationException

@@ -1,5 +1,6 @@
 import freezegun
-from asynctest import TestCase, Mock, patch
+from unittest import IsolatedAsyncioTestCase
+from unittest.mock import Mock, patch
 
 from barterdude.hooks.metrics.prometheus import Prometheus
 
@@ -13,7 +14,7 @@ from prometheus_client import (
 )
 
 
-class TestPrometheus(TestCase):
+class TestPrometheus(IsolatedAsyncioTestCase):
     def setUp(self):
         self.registry = Mock()
         self.labels = {"test": "my_test"}

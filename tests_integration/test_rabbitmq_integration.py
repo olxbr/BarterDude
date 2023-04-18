@@ -4,7 +4,7 @@ from asyncio import Event
 from random import choices
 from string import ascii_uppercase
 
-from asynctest import TestCase
+from unittest import IsolatedAsyncioTestCase
 from asyncworker.connections import AMQPConnection
 from barterdude import BarterDude
 from barterdude.hooks.logging import Logging
@@ -15,11 +15,10 @@ from tests_unit.helpers import load_fixture
 from tests_integration.helpers import ErrorHook
 
 
-class RabbitMQConsumerTest(TestCase):
-    use_default_loop = True
+class RabbitMQConsumerTest(IsolatedAsyncioTestCase):
 
-    async def setUp(self):
-        self.input_queue = "test"
+    async def asyncSetUp(self):
+        self.input_queue = "test_input"
         self.output_exchange = "test_exchange"
         self.output_queue = "test_output"
         self.rabbitmq_host = os.environ.get("RABBITMQ_HOST", "127.0.0.1")
@@ -34,6 +33,9 @@ class RabbitMQConsumerTest(TestCase):
         )
         self.queue_manager = self.connection["/"]
         await self.queue_manager.connection._connect()
+
+        await self.clear()
+
         await self.queue_manager.connection.channel.queue_declare(
             self.input_queue
         )
@@ -56,8 +58,12 @@ class RabbitMQConsumerTest(TestCase):
 
         self.app = BarterDude(hostname=self.rabbitmq_host)
 
-    async def tearDown(self):
+    async def asyncTearDown(self):
         await self.app.shutdown()
+        await self.clear()
+        await self.queue_manager.connection.close()
+
+    async def clear(self):
         await self.queue_manager.connection.channel.queue_delete(
             self.input_queue
         )
@@ -67,7 +73,6 @@ class RabbitMQConsumerTest(TestCase):
         await self.queue_manager.connection.channel.exchange_delete(
             self.output_exchange
         )
-        await self.queue_manager.connection.close()
 
     async def send_all_messages(self):
         futures = []
@@ -111,7 +116,6 @@ class RabbitMQConsumerTest(TestCase):
 
     async def test_process_messages_successfully_even_with_crashed_hook(self):
         received_messages = set()
-        sync_event = Event()
 
         monitor = Monitor(ErrorHook())
 
@@ -120,14 +124,16 @@ class RabbitMQConsumerTest(TestCase):
         async def handler(message):
             nonlocal received_messages
             received_messages.add(message.body["key"])
-            sync_event.set()
 
         await self.app.startup()
         await self.send_all_messages()
 
-        await sync_event.wait()
-        for message in self.messages:
-            self.assertTrue(message["key"] in received_messages)
+        expected = set([m["key"] for m in self.messages])
+
+        while len(expected - received_messages) > 0:
+            await asyncio.sleep(0.05)
+
+        self.assertEquals(expected, received_messages)
 
     async def test_process_one_message_and_publish(self):
         sync_event = Event()

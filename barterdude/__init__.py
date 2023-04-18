@@ -6,7 +6,7 @@ from asyncworker import App, RouteTypes
 from asyncworker.options import Options
 from asyncworker.connections import AMQPConnection
 from asyncworker.rabbitmq.message import RabbitMQMessage
-from collections import MutableMapping
+from collections.abc import MutableMapping
 from typing import Iterable, Optional, Callable, Any, Tuple
 from barterdude.monitor import Monitor
 from barterdude.message import MessageValidation, ValidationException
