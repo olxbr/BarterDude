@@ -84,7 +84,6 @@ class TestBarterDude(IsolatedAsyncioTestCase):
     async def test_hook_to_callback_should_be_async_and_typed(self):
         bd = BarterDude()
         bd.add_endpoint = Mock()
-        bd._call_callback_endpoint = Mock()
 
         hook = Mock()
         bd.add_callback_endpoint(
