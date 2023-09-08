@@ -44,7 +44,7 @@ class BarterDude(MutableMapping):
         hook: Callable,
         mock_dependencies: Iterable[Tuple[Any, str]] = None,
     ):
-        async def hook_to_callback(req:web.Request):
+        async def hook_to_callback(req: web.Request):
             return await self._call_callback_endpoint(req, hook, mock_dependencies)
 
         self.add_endpoint(
