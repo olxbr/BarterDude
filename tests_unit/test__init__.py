@@ -1,3 +1,5 @@
+import asyncio
+import typing
 from unittest import IsolatedAsyncioTestCase
 from unittest.mock import Mock, AsyncMock, patch, call
 
@@ -78,6 +80,21 @@ class TestBarterDude(IsolatedAsyncioTestCase):
             type=RouteTypes.HTTP
         )
         self.decorator.assert_called_once()
+
+    async def test_hook_to_callback_should_be_async_and_typed(self):
+        bd = BarterDude()
+        bd.add_endpoint = Mock()
+
+        hook = Mock()
+        bd.add_callback_endpoint(
+            ['/my_route'],
+            hook,
+            [(Mock(), 'service')]
+        )
+
+        internal_hook = bd.add_endpoint.call_args_list[0][1].get('hook')
+        assert asyncio.iscoroutinefunction(internal_hook) is True
+        assert 'req' in typing.get_type_hints(internal_hook)
 
     async def test_should_hook_call_on_callback_endpoint(self):
         async def mock_hook(message, barterdude):
