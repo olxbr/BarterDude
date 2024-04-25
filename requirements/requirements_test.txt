@@ -4,4 +4,4 @@ coverage>5.0,<6.0
 bandit>1.0,<2.0.0
 flake8>3.0.0,<4.0.0
 freezegun==0.3.14
-pydantic==1.7.4
+pydantic==1.10.13
