@@ -32,6 +32,9 @@ jobs:
       - name: Run code quality
         uses: olxbr/code-quality-action@v1
 
+      - name: Quality Gate - Unit Test
+        run: true
+
   build-and-publish-dev:
     if: startsWith( github.ref, 'refs/tags/' )
     needs: [quality]
