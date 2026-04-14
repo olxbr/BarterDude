@@ -2,6 +2,9 @@ name: main workflow
 
 on:
   push:
+    branches: [master]
+  pull_request:
+    branches: [master]
   workflow_dispatch:
 
 jobs:
@@ -31,6 +34,14 @@ jobs:
 
       - name: Run code quality
         uses: olxbr/code-quality-action@v1
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarqube-scan-action@v7.0.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      - name: Quality Gate - Unit Test
+        run: true
 
   build-and-publish-dev:
     if: startsWith( github.ref, 'refs/tags/' )

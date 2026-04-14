@@ -1,4 +1,4 @@
-.PHONY: install setup lint test integration all-tests check-sec rabbitmq
+.PHONY: install setup lint test coverage integration all-tests check-sec rabbitmq
 
 install:
 	@pip install -e .
@@ -11,6 +11,9 @@ lint:
 
 test:
 	@pytest --ignore="tests_integration" --cov=barterdude
+
+coverage:
+	@pytest --ignore="tests_integration" --cov=barterdude --cov-report=xml
 
 integration:
 	@pytest --ignore="tests_unit" -vv
