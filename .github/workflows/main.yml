@@ -9,7 +9,7 @@ on:
 
 jobs:
   quality:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, olx, prod]
 
     services:
       rabbitmq:
@@ -33,7 +33,7 @@ jobs:
         run: make check-sec
 
       - name: Run code quality
-        uses: olxbr/code-quality-action@v3
+        uses: olxbr/code-quality-action@v1
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarqube-scan-action@v7.0.0
