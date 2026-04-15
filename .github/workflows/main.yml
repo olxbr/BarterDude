@@ -33,7 +33,7 @@ jobs:
         run: make check-sec
 
       - name: Run code quality
-        uses: olxbr/code-quality-action@v1
+        uses: olxbr/code-quality-action@v3
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarqube-scan-action@v7.0.0
