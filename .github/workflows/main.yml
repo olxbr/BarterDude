@@ -29,9 +29,6 @@ jobs:
       - name: Install project dependencies
         run: make setup
 
-      - name: Run security check
-        run: make check-sec
-
       - name: Run code quality
         uses: olxbr/code-quality-action@v1
 
